@@ -1,0 +1,13 @@
+# Database Configuration
+DB_USER=your_db_user
+DB_PASSWORD=your_db_password
+DB_HOST=your_db_host
+DB_NAME=your_db_name
+DB_DRIVER=ODBC Driver 17 for SQL Server
+
+# Test Mode - set to true to use XLSX dummy data instead of database
+TEST_MODE=false
+
+# LLM API Configuration (optional)
+LLM_API_URL=your_llm_api_url
+LLM_API_KEY=your_llm_api_key
