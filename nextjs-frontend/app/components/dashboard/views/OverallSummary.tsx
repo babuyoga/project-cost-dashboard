@@ -15,7 +15,7 @@ export function OverallSummary() {
   const data = overallSummaryData;
 
   // Find max difference project
-  const maxDiff = [...data].sort((a,b) => b[metric] - a[metric])[0];
+  const maxDiff = [...data].sort((a,b) => b.difference - a.difference)[0];
 
   return (
     <div className="space-y-6">
@@ -44,7 +44,7 @@ export function OverallSummary() {
                 <td className="px-6 py-4">{row.cClientDesc}</td>
                 <td className="px-6 py-4">{row.cProjDesc}</td>
                 <td className="px-6 py-4 text-right font-mono text-white">
-                  {row[metric]?.toLocaleString()}
+                  {row.difference?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </td>
               </tr>
             ))}
