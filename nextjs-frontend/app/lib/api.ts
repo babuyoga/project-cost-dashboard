@@ -93,19 +93,22 @@ export async function fetchProjects(): Promise<number[]> {
 }
 
 export async function fetchOverallSummary(
-  period: string,
+  periodFrom: string,
+  periodTo: string,
   metric: string,
 ): Promise<any[]> {
   console.log(
     "[API] Fetching overall summary. Period:",
-    period,
+    periodFrom,
+    "->",
+    periodTo,
     "Metric:",
     metric,
   );
   const res = await fetch(`${API_BASE_url}/analysis/overall-summary`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ period, metric }),
+    body: JSON.stringify({ period_from: periodFrom, period_to: periodTo, metric }),
   });
   checkDataSource(res);
   if (!res.ok) {

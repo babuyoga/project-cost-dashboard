@@ -23,7 +23,7 @@ export function DataFetcher() {
         setAnalysisError(null);
 
         // Fetch both datasets in parallel
-        const p1 = fetchOverallSummary(toPeriod, metric);
+        const p1 = fetchOverallSummary(fromPeriod, toPeriod, metric);
         
         // Only fetch project comparison if a project is selected
         const p2 = selectedProject 
