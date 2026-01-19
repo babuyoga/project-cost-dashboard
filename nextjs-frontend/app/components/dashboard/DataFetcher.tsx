@@ -25,8 +25,8 @@ export function DataFetcher() {
         // Fetch both datasets in parallel
         const p1 = fetchOverallSummary(fromPeriod, toPeriod, metric);
         
-        // Only fetch project comparison if a project is selected
-        const p2 = selectedProject 
+        // Only fetch project comparison if a specific project is selected (not 'OVERALL')
+        const p2 = (selectedProject && selectedProject !== 'OVERALL')
             ? fetchForecastComparison(fromPeriod, toPeriod, selectedProject, metric)
             : Promise.resolve(null);
 
@@ -34,7 +34,8 @@ export function DataFetcher() {
             .then(([overallData, comparisonData]) => {
                 // For comparison data, we need to extract the specific project if it exists
                 let projData = null;
-                if (comparisonData && selectedProject) {
+                if (comparisonData && selectedProject && selectedProject !== 'OVERALL') {
+                    // Start of Selection
                     projData = comparisonData.projects[String(selectedProject)] || null;
                 }
                 

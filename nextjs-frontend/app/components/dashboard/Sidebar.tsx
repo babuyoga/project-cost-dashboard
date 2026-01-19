@@ -72,9 +72,17 @@ export function Sidebar() {
             <select 
                 className="w-full rounded border border-slate-700 bg-slate-900 p-2 text-sm text-white focus:border-blue-600 focus:outline-none"
                 value={selectedProject || ""}
-                onChange={(e) => setSelectedProject(Number(e.target.value))}
+                onChange={(e) => {
+                    const val = e.target.value;
+                    if (val === "OVERALL") {
+                        setSelectedProject("OVERALL");
+                    } else {
+                        setSelectedProject(Number(val));
+                    }
+                }}
             >
                 <option value="">Select project</option>
+                <option value="OVERALL">Overall Summary</option>
                 {projects.map(p => <option key={p} value={p}>{p}</option>)}
             </select>
             </div>
@@ -94,7 +102,13 @@ export function Sidebar() {
             <button
             onClick={runAnalysis}
             disabled={isAnalysisRunning}
-            className="w-full rounded bg-blue-600 py-2.5 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+            className={`w-full rounded py-2.5 text-sm font-medium text-white transition-colors
+              ${isAnalysisRunning 
+                ? 'bg-blue-600/50 cursor-not-allowed' 
+                : (!fromPeriod || !toPeriod || !selectedProject)
+                  ? 'bg-blue-600/50 hover:bg-blue-600/50 cursor-not-allowed'
+                  : 'bg-blue-600 hover:bg-blue-700'
+              }`}
             >
             {isAnalysisRunning ? 'Running...' : 'Run analysis'}
             </button>

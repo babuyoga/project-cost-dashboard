@@ -61,7 +61,15 @@ export function CostBreakdownView({ depth }: CostBreakdownViewProps) {
     const sortedData = [...viewData].sort((a,b) => Math.abs(b.value) - Math.abs(a.value));
 
     if (analysisLoading) return <div className="text-white">Loading breakdown...</div>;
-    if (!data) return <div className="text-slate-400">No data available.</div>;
+    
+    // Show placeholder if no project data
+    if (!data) {
+        return (
+          <div className="flex h-[400px] items-center justify-center rounded-lg border border-slate-800 bg-slate-900">
+              <p className="text-lg text-slate-400">Choose a project number in the sidebar and run analysis.</p>
+          </div>
+        );
+    }
 
     // Filter UI
     const renderFilters = () => (

@@ -11,7 +11,15 @@ export function ProjectSummary() {
   
   if (analysisLoading) return <div className="text-white">Loading comparison...</div>;
   if (analysisError) return <div className="text-red-500">Error: {analysisError}</div>;
-  if (!projectAnalysisData) return <div className="text-slate-400">Select a project and click &quot;Run analysis&quot;.</div>;
+  
+  // Show placeholder if no project data (which happens when selecting "Overall Summary" or no project)
+  if (!projectAnalysisData) {
+      return (
+        <div className="flex h-[400px] items-center justify-center rounded-lg border border-slate-800 bg-slate-900">
+            <p className="text-lg text-slate-400">Choose a project number in the sidebar and run analysis.</p>
+        </div>
+      );
+  }
 
   const data = projectAnalysisData;
 

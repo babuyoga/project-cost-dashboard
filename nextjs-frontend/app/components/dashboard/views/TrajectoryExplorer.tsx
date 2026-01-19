@@ -10,7 +10,15 @@ export function TrajectoryExplorer() {
   const { metric, projectAnalysisData, analysisLoading } = useDashboardStore();
 
   if (analysisLoading) return <div className="text-white">Loading trajectory...</div>;
-  if (!projectAnalysisData) return <div className="text-slate-400">No data available.</div>;
+  
+  // Show placeholder if no project data
+  if (!projectAnalysisData) {
+      return (
+        <div className="flex h-[400px] items-center justify-center rounded-lg border border-slate-800 bg-slate-900">
+            <p className="text-lg text-slate-400">Choose a project number in the sidebar and run analysis.</p>
+        </div>
+      );
+  }
 
   const data = projectAnalysisData;
 

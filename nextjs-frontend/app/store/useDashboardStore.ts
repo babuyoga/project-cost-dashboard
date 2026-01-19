@@ -5,7 +5,7 @@ interface DashboardState {
   // Selections
   fromPeriod: string; 
   toPeriod: string; 
-  selectedProject: number | null;
+  selectedProject: number | 'OVERALL' | null;
   metric: 'forecast_costs_at_completion' | 'ytd_actual';
 
   // Dashboard State
@@ -32,7 +32,7 @@ interface DashboardState {
   // Actions
   setFromPeriod: (period: string) => void;
   setToPeriod: (period: string) => void;
-  setSelectedProject: (projectId: number) => void;
+  setSelectedProject: (projectId: number | 'OVERALL') => void;
   setMetric: (metric: string) => void;
   setActiveTab: (tab: string) => void;
   toggleSidebar: () => void;
