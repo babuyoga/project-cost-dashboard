@@ -12,7 +12,7 @@ import logging
 from app.database import get_db
 from app.models.schemas import ForecastComparisonRequest, ProjectSummaryRequest
 from app.services.sql_queries import query_batch_to_df
-
+import pandas as pd
 
 from app.services.data_processor import (
     combine_projects_rows,
@@ -202,32 +202,56 @@ def get_overall_summary(
         List of dictionaries with collapsed project data
     """
     logger.info("POST /api/analysis/overall-summary")
-    logger.info(f"  Period: {request.period}, Metric: {request.metric}")
-    
+    logger.info(f"  From Period: {request.period_from}, To period: {request.period_to}, Metric: {request.metric}")
+    summary_dfs = []
     try:
-        # Fetch data
-        df = query_batch_to_df(db, request.period)
-        
-        if df.empty:
-            logger.warning(f"  No data found for period {request.period}")
-            raise HTTPException(
-                status_code=404,
-                detail=f"No data found for period {request.period}"
-            )
-        
-        logger.info(f"  Retrieved {len(df)} records from database")
+        for period in [request.period_from, request.period_to]:
+            logger.info(f"  Processing period: {period}")
+            # Fetch data
+            df = query_batch_to_df(db, period)
+            if df.empty:
+                logger.warning(f"  No data found for period {period}")
+                raise HTTPException(
+                    status_code=404,
+                    detail=f"No data found for period {period}"
+                )
             
-        # Collapse projects
-        logger.debug("  Collapsing projects...")
-        summary_df = preprocess_df_collapse_projects(df, request.metric)
-        logger.info(f"  Collapsed to {len(summary_df)} projects")
-        
-        # Convert to list of dicts
-        result = summary_df.to_dict(orient="records")
-        return result
+            logger.info(f"  Retrieved {len(df)} records from database")
+            logger.debug("  Combining projects...")
+            df = combine_projects_rows(
+                        df,
+                        project_groups=projects_list,
+                        sum_cols=metric_map[request.metric]
+                    )
+            logger.info(f"  Combined - now we have {len(df)} projects")
+            # Collapse projects
+            logger.debug("  Collapsing projects...")
+            summary_df = preprocess_df_collapse_projects(df, metric_map[request.metric])
+            logger.info(f"  Collapsed to {len(summary_df)} projects")
+            summary_dfs.append(summary_df)
+            
+        if len(summary_dfs) != 2:
+            raise HTTPException(status_code=500, detail="Expected exactly two periods of results.")
 
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"  Summary generation failed: {str(e)}", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"Summary generation failed: {str(e)}")
+        df_from, df_to = summary_dfs[0].copy(), summary_dfs[1].copy()
+        cols = ["iProjNo", "iProjYear", "cProjDesc", "cClientDesc", "rForecast"]
+        df_from = df_from[cols].rename(columns={"rForecast": "rForecast_from"})
+        df_to   = df_to[cols].rename(columns={"rForecast": "rForecast_to"})
+
+        merged = df_to.merge(df_from, on="iProjNo", how="inner", suffixes=("_to", "_from"))
+        out = pd.DataFrame({
+            "iProjNo": merged["iProjNo"],
+            "iProjYear": merged["iProjYear_to"].fillna(merged["iProjYear_from"]),
+            "cProjDesc": merged["cProjDesc_to"].fillna(merged["cProjDesc_from"]),
+            "cClientDesc": merged["cClientDesc_to"].fillna(merged["cClientDesc_from"]),
+        })
+        out["difference"] = (
+            pd.to_numeric(merged["rForecast_to"], errors="coerce").fillna(0.0)
+            - pd.to_numeric(merged["rForecast_from"], errors="coerce").fillna(0.0)
+        )/1000
+        out = out.sort_values("difference", ascending=False).reset_index(drop=True)
+        return out.to_dict(orient="records")
+
+    except Exception as e: 
+        logger.exception("Error in /overall-summary") 
+        raise HTTPException(status_code=500, detail=str(e))

@@ -90,8 +90,10 @@ class ProjectSummaryRequest(BaseModel):
     Request body for the overall project summary endpoint.
     
     Attributes:
-        period: Period to analyze in YYYYMM format
+        period_from: from which Period to analyze in YYYYMM format
+        period_to: up to which Period to analyze in YYYYMM format
         metric: Metric to summarize (e.g., 'forecast_costs_at_completion')
     """
-    period: str = Field(..., pattern=r"^\d{6}$", description="Format: YYYYMM")
+    period_from: str = Field(..., pattern=r"^\d{6}$", description="Format: YYYYMM")
+    period_to: str = Field(..., pattern=r"^\d{6}$", description="Format: YYYYMM")
     metric: str = Field(..., pattern="^(forecast_costs_at_completion|ytd_actual)$")

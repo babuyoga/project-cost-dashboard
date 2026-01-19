@@ -7,7 +7,7 @@ export async function GET() {
   console.log('  Backend URL:', BACKEND_URL);
   
   try {
-    const res = await fetch(`${BACKEND_URL}/projects/periods`, { cache: 'no-store' });
+    const res = await fetch(`${BACKEND_URL}/api/projects/periods`, { cache: 'no-store' });
     if (!res.ok) {
       console.warn(`  Backend returned status ${res.status}, falling back to mock data`);
       throw new Error('Backend failed');
