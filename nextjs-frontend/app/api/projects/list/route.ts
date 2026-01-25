@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { MOCK_PROJECTS } from '../../mockData';
+
 
 export async function GET() {
   const BACKEND_URL = process.env.API_URL || 'http://backend:8000';
@@ -9,24 +9,20 @@ export async function GET() {
   try {
     const res = await fetch(`${BACKEND_URL}/api/projects/list`, { cache: 'no-store' });
     if (!res.ok) {
-      console.warn(`  Backend returned status ${res.status}, falling back to mock data`);
-      throw new Error('Backend failed');
+      console.warn(`  Backend returned status ${res.status}`);
+      return NextResponse.json(
+        { error: `Backend failed with status ${res.status}` },
+        { status: res.status }
+      );
     }
     const data = await res.json();
     console.log(`  Successfully fetched ${data.projects?.length || 0} projects from backend`);
     return NextResponse.json(data);
   } catch (error) {
-    console.warn(`  Backend unreachable (${BACKEND_URL}), serving mock projects.`);
-    console.log(`  Returning ${MOCK_PROJECTS.length} mock projects`);
+    console.error(`  Backend unreachable (${BACKEND_URL}) or other error:`, error);
     return NextResponse.json(
-      { projects: MOCK_PROJECTS },
-      { 
-        status: 200, 
-        headers: { 
-          'x-mock-data': 'true', 
-          'x-api-url': BACKEND_URL 
-        } 
-      }
+      { error: 'Failed to fetch projects from backend' },
+      { status: 500 }
     );
   }
 }

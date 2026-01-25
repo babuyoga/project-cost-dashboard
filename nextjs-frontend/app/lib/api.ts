@@ -40,14 +40,24 @@ export interface CostlineChild {
   difference: number;
 }
 
+// Helper to parse error response
+async function getErrorMessage(res: Response): Promise<string> {
+  try {
+    const data = await res.json();
+    if (data.error) return data.error;
+    if (data.detail) return typeof data.detail === 'string' ? data.detail : JSON.stringify(data.detail);
+  } catch (e) {
+    // ignore json parse error
+  }
+  return res.statusText || `Request failed with status ${res.status}`;
+}
+
 function checkDataSource(res: Response) {
-  const isMock = res.headers.get("x-mock-data") === "true";
+  // We ignoring 'x-mock-data' as we no longer support it
   const isTest = res.headers.get("x-backend-test-mode") === "true";
   const url = res.headers.get("x-api-url") || "Backend API";
 
-  if (isMock) {
-    useDashboardStore.getState().setDataSource("mock", url);
-  } else if (isTest) {
+  if (isTest) {
     useDashboardStore.getState().setDataSource("test", url);
   } else {
     // Production data - clear any previous mock/test indicators
@@ -63,12 +73,13 @@ export async function fetchPeriods(): Promise<string[]> {
   const res = await fetch(`${API_BASE_url}/projects/periods`);
   checkDataSource(res);
   if (!res.ok) {
-    console.error(
+    const errorMsg = await getErrorMessage(res);
+    console.warn(
       "[API] Failed to fetch periods. Status:",
       res.status,
-      res.statusText,
+      errorMsg
     );
-    throw new Error("Failed to fetch periods");
+    throw new Error(errorMsg);
   }
   const data = await res.json();
   console.log(`[API] Fetched ${data.periods.length} periods:`, data.periods);
@@ -80,12 +91,13 @@ export async function fetchProjects(): Promise<number[]> {
   const res = await fetch(`${API_BASE_url}/projects/list`);
   checkDataSource(res);
   if (!res.ok) {
-    console.error(
+    const errorMsg = await getErrorMessage(res);
+    console.warn(
       "[API] Failed to fetch projects. Status:",
       res.status,
-      res.statusText,
+      errorMsg
     );
-    throw new Error("Failed to fetch projects");
+    throw new Error(errorMsg);
   }
   const data = await res.json();
   console.log(`[API] Fetched ${data.projects.length} projects:`, data.projects);
@@ -112,12 +124,13 @@ export async function fetchOverallSummary(
   });
   checkDataSource(res);
   if (!res.ok) {
-    console.error(
+    const errorMsg = await getErrorMessage(res);
+    console.warn(
       "[API] Failed to fetch overall summary. Status:",
       res.status,
-      res.statusText,
+      errorMsg
     );
-    throw new Error("Failed to fetch overall summary");
+    throw new Error(errorMsg);
   }
   const data = await res.json();
   console.log(`[API] Fetched overall summary with ${data.length} projects`);
@@ -153,12 +166,13 @@ export async function fetchForecastComparison(
   });
   checkDataSource(res);
   if (!res.ok) {
-    console.error(
+    const errorMsg = await getErrorMessage(res);
+    console.warn(
       "[API] Failed to fetch forecast comparison. Status:",
       res.status,
-      res.statusText,
+      errorMsg
     );
-    throw new Error("Failed to fetch comparison");
+    throw new Error(errorMsg);
   }
   const data = await res.json();
   const numProjects = Object.keys(data.projects || {}).length;

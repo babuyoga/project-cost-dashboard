@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { MOCK_FORECAST_COMPARISON } from '../../mockData';
+
 
 export async function POST(request: NextRequest) {
   const BACKEND_URL = process.env.API_URL || 'http://backend:8000';
@@ -18,26 +18,21 @@ export async function POST(request: NextRequest) {
     });
     
     if (!res.ok) {
-      console.warn(`  Backend returned status ${res.status}, falling back to mock data`);
-      throw new Error('Backend failed');
+      console.warn(`  Backend returned status ${res.status}`);
+      return NextResponse.json(
+        { error: `Backend failed with status ${res.status}` },
+        { status: res.status }
+      );
     }
     const data = await res.json();
     const numProjects = Object.keys(data.projects || {}).length;
     console.log(`  Successfully fetched forecast comparison for ${numProjects} project(s)`);
     return NextResponse.json(data);
   } catch (error) {
-    console.warn(`  Backend unreachable (${BACKEND_URL}), serving mock forecast comparison.`);
-    const numMockProjects = Object.keys(MOCK_FORECAST_COMPARISON.projects || {}).length;
-    console.log(`  Returning mock data for ${numMockProjects} project(s)`);
+    console.error(`  Backend unreachable (${BACKEND_URL}) or other error:`, error);
     return NextResponse.json(
-      MOCK_FORECAST_COMPARISON,
-      { 
-        status: 200, 
-        headers: { 
-          'x-mock-data': 'true', 
-          'x-api-url': BACKEND_URL 
-        } 
-      }
+      { error: 'Failed to fetch forecast comparison from backend' },
+      { status: 500 }
     );
   }
 }

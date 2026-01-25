@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { MOCK_OVERALL_SUMMARY } from '../../mockData';
+
 
 export async function POST(request: NextRequest) {
   const BACKEND_URL = process.env.API_URL || 'http://backend:8000';
@@ -18,24 +18,20 @@ export async function POST(request: NextRequest) {
     });
     
     if (!res.ok) {
-      console.warn(`  Backend returned status ${res.status}, falling back to mock data`);
-      throw new Error('Backend failed');
+      console.warn(`  Backend returned status ${res.status}`);
+      return NextResponse.json(
+        { error: `Backend failed with status ${res.status}` },
+        { status: res.status }
+      );
     }
     const data = await res.json();
     console.log(`  Successfully fetched overall summary: ${data.length} projects`);
     return NextResponse.json(data);
   } catch (error) {
-    console.warn(`  Backend unreachable (${BACKEND_URL}), serving mock overall summary.`);
-    console.log(`  Returning ${MOCK_OVERALL_SUMMARY.length} mock projects`);
+    console.error(`  Backend unreachable (${BACKEND_URL}) or other error:`, error);
     return NextResponse.json(
-      MOCK_OVERALL_SUMMARY,
-      { 
-        status: 200, 
-        headers: { 
-          'x-mock-data': 'true', 
-          'x-api-url': BACKEND_URL 
-        } 
-      }
+      { error: 'Failed to fetch overall summary from backend' },
+      { status: 500 }
     );
   }
 }

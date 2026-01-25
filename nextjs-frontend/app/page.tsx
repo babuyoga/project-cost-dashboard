@@ -17,7 +17,7 @@ import { DataFetcher } from "./components/dashboard/DataFetcher";
 import { ValidationModal } from "./components/ValidationModal";
 
 export default function DashboardPage() {
-  const { activeTab } = useDashboardStore();
+  const { activeTab, analysisError, setAnalysisError } = useDashboardStore();
 
   return (
     <div className="flex h-screen bg-[#020b1c] text-slate-100">
@@ -33,6 +33,21 @@ export default function DashboardPage() {
                 This dashboard visualizes the differences in project costs (EAC or YTD), highlighting project-level changes.
             </p>
         </header>
+
+        {analysisError && (
+          <div className="mb-6 p-4 bg-red-900/30 border border-red-800 rounded-lg flex items-start justify-between">
+            <div className="text-red-200">
+              <h4 className="font-semibold mb-1">Analysis Failed</h4>
+              <p className="text-sm opacity-90">{analysisError}</p>
+            </div>
+            <button 
+              onClick={() => setAnalysisError(null)}
+              className="text-red-400 hover:text-red-200"
+            >
+              ×
+            </button>
+          </div>
+        )}
 
         <TabNavigation />
 

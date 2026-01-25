@@ -15,9 +15,54 @@ function formatPeriod(period: string) {
 }
 
 export function Sidebar() {
+  const [initError, setInitError] = useState<string | null>(null);
+  const [isInitializing, setIsInitializing] = useState(false);
   const [periods, setPeriods] = useState<string[]>([]);
   const [projects, setProjects] = useState<number[]>([]);
-  
+
+  const initializeData = async () => {
+    setIsInitializing(true);
+    const startTime = Date.now();
+    // Don't clear error yet, so the box stays visible while loading
+    try {
+      const [periodsResult, projectsResult] = await Promise.allSettled([
+        fetchPeriods(),
+        fetchProjects()
+      ]);
+
+      if (periodsResult.status === 'fulfilled') {
+        setPeriods(periodsResult.value);
+      }
+      if (projectsResult.status === 'fulfilled') {
+        setProjects(projectsResult.value);
+      }
+
+      const errors: string[] = [];
+      if (periodsResult.status === 'rejected') errors.push(`Periods: ${periodsResult.reason.message}`);
+      if (projectsResult.status === 'rejected') errors.push(`Projects: ${projectsResult.reason.message}`);
+
+      if (errors.length > 0) {
+        setInitError(errors.join(' | ')); // Combine errors if both failed
+        // Note: we don't re-throw, just set the UI error state
+      } else {
+        setInitError(null);
+      }
+    } catch (error: any) {
+      console.error("Failed to initialize sidebar data:", error);
+      setInitError(error.message || "Failed to load options");
+    } finally {
+      // Calculate remaining time to satisfy the minimum 3-second loader requirement
+      const elapsedTime = Date.now() - startTime;
+      const remainingTime = Math.max(0, 3000 - elapsedTime);
+      
+      if (remainingTime > 0) {
+        await new Promise(resolve => setTimeout(resolve, remainingTime));
+      }
+      
+      setIsInitializing(false);
+    }
+  };
+
   const { 
     fromPeriod, setFromPeriod,
     toPeriod, setToPeriod,
@@ -28,8 +73,7 @@ export function Sidebar() {
   } = useDashboardStore();
 
   useEffect(() => {
-    fetchPeriods().then(setPeriods).catch(console.error);
-    fetchProjects().then(setProjects).catch(console.error);
+    initializeData();
   }, []);
 
   return (
@@ -40,6 +84,19 @@ export function Sidebar() {
               {isSidebarCollapsed ? <ChevronRight size={20} /> : <ChevronLeft size={20} />}
           </button>
       </div>
+
+      {initError && !isSidebarCollapsed && (
+        <div className="mb-4 p-3 bg-red-900/20 border border-red-800 rounded text-sm text-red-200">
+          <p className="mb-2">{initError}</p>
+          <button 
+            onClick={initializeData} 
+            disabled={isInitializing}
+            className="text-xs bg-red-800 hover:bg-red-700 text-white px-2 py-1 rounded transition-colors disabled:opacity-50"
+          >
+            {isInitializing ? 'Retrying...' : 'Retry'}
+          </button>
+        </div>
+      )}
       
       {!isSidebarCollapsed && (
         <div className="flex flex-col gap-6">
