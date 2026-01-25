@@ -54,6 +54,14 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Capture is_first_login status before updating it
+    const isFirstLogin = Boolean(user.is_first_login);
+
+    // Update is_first_login if it's true
+    if (user.is_first_login) {
+        db.prepare("UPDATE users SET is_first_login = 0 WHERE id = ?").run(user.id);
+    }
+
     // Create session
     const sessionId = uuidv4();
     const now = new Date();
@@ -87,7 +95,8 @@ export async function POST(req: NextRequest) {
       user: {
         id: user.id,
         username: user.username,
-        isAdmin: Boolean(user.is_admin)
+        isAdmin: Boolean(user.is_admin),
+        isFirstLogin: isFirstLogin
       }
     });
   } catch (error: any) {

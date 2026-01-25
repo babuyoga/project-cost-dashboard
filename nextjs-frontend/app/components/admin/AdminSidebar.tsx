@@ -25,13 +25,7 @@ export function AdminSidebar() {
   }, []);
 
   const routes = [
-    {
-      label: "Dashboard",
-      icon: LayoutDashboard,
-      href: "/dashboard",
-      color: "text-sky-500",
-    },
-    {
+     {
       label: "Admin Panel",
       icon: Shield,
       href: "/admin",
@@ -45,6 +39,13 @@ export function AdminSidebar() {
       color: "text-orange-500",
       newTab: false,
     },
+    {
+      label: "Dashboard",
+      icon: LayoutDashboard,
+      href: "/dashboard",
+      color: "text-sky-500",
+    },
+   
     {
       label: "API Explorer",
       icon: Database,

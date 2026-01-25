@@ -21,22 +21,33 @@ db.exec(`
     created_at TEXT DEFAULT (datetime('now')),
     updated_at TEXT DEFAULT (datetime('now')),
     password_updated_at TEXT,
-    tokenusage INTEGER DEFAULT 0
+    tokenusage INTEGER DEFAULT 0,
+    is_first_login INTEGER DEFAULT 1
   )
 `);
 
 // Migration: Add tokenusage column if it doesn't exist
 try {
   const tableInfo = db.prepare("PRAGMA table_info(users)").all();
-  const hasTokenUsage = tableInfo.some(col => col.name === 'tokenusage');
   
+  // Check for tokenusage
+  const hasTokenUsage = tableInfo.some(col => col.name === 'tokenusage');
   if (!hasTokenUsage) {
     console.log('Adding tokenusage column to users table...');
     db.exec('ALTER TABLE users ADD COLUMN tokenusage INTEGER DEFAULT 0');
     console.log('Added tokenusage column');
   }
+
+  // Check for is_first_login
+  const hasFirstTimeLogin = tableInfo.some(col => col.name === 'is_first_login');
+  if (!hasFirstTimeLogin) {
+    console.log('Adding is_first_login column to users table...');
+    db.exec('ALTER TABLE users ADD COLUMN is_first_login INTEGER DEFAULT 1');
+    console.log('Added is_first_login column');
+  }
+
 } catch (error) {
-  console.error('Error checking/adding tokenusage column:', error);
+  console.error('Error checking/adding columns:', error);
 }
 console.log('Created users table');
 

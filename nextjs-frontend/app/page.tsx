@@ -61,6 +61,8 @@ export default function LoginPage() {
         const data = await response.json();
         if (data.user.isAdmin) {
             router.push("/admin");
+        } else if (data.user.isFirstLogin) {
+            router.push("/settings");
         } else {
             router.push("/dashboard");
         }
