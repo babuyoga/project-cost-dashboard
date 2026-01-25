@@ -19,6 +19,7 @@ export function AdminSidebar() {
       icon: Shield,
       href: "/admin",
       color: "text-violet-500",
+      newTab: false,
     },
     {
       label: "API Explorer",
