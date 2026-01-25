@@ -6,7 +6,6 @@ import { Card } from "@/app/components/ui/card";
 import { Button } from "@/app/components/ui/button";
 import { useAuthGuard } from "@/app/hooks/useAuthGuard";
 
-
 interface User {
   id: string;
   username: string;
@@ -50,7 +49,7 @@ export default function AdminPage() {
   // Fetch users on mount
   useEffect(() => {
     if (!authorized) return;
-    
+
     const fetchUsers = async () => {
       try {
         const response = await fetch("/api/admin/users");
@@ -192,11 +191,14 @@ export default function AdminPage() {
     setIsResettingPassword(true);
 
     try {
-      const response = await fetch(`/api/admin/users/${passwordResetUser.id}/password`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ password: newPassword }),
-      });
+      const response = await fetch(
+        `/api/admin/users/${passwordResetUser.id}/password`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ password: newPassword }),
+        },
+      );
 
       if (!response.ok) {
         const data = await response.json();
@@ -204,18 +206,19 @@ export default function AdminPage() {
       }
 
       setResetSuccess("Password updated successfully");
-      
+
       // Update local state to reflect password change timestamp
-      setUsers(prev => prev.map(u => 
-        u.id === passwordResetUser.id 
-          ? { ...u, passwordUpdatedAt: new Date().toISOString() } 
-          : u
-      ));
+      setUsers((prev) =>
+        prev.map((u) =>
+          u.id === passwordResetUser.id
+            ? { ...u, passwordUpdatedAt: new Date().toISOString() }
+            : u,
+        ),
+      );
 
       setTimeout(() => {
         closePasswordReset();
       }, 1500);
-
     } catch (err: any) {
       setResetError(err.message || "Failed to update password");
     } finally {
@@ -330,7 +333,9 @@ export default function AdminPage() {
           <h2 className="text-xl font-semibold text-slate-200">User List</h2>
           <Card className="overflow-hidden bg-slate-900 border-slate-800">
             {isLoadingUsers ? (
-              <div className="p-8 text-center text-slate-500">Loading users...</div>
+              <div className="p-8 text-center text-slate-500">
+                Loading users...
+              </div>
             ) : users.length === 0 ? (
               <div className="p-8 text-center text-slate-500">
                 No users found.
@@ -350,8 +355,8 @@ export default function AdminPage() {
                   </thead>
                   <tbody className="divide-y divide-slate-800">
                     {users.map((user) => (
-                      <tr 
-                        key={user.id} 
+                      <tr
+                        key={user.id}
                         onClick={() => setSelectedUser(user)}
                         className="group hover:bg-slate-800/50 cursor-pointer transition-colors"
                       >
@@ -365,9 +370,9 @@ export default function AdminPage() {
                           {user.email || "-"}
                         </td>
                         <td className="p-4 text-slate-200">
-                          {user.isAdmin ? (
+                          {user.isAdmin? (
                             <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-500/10 text-purple-400 border border-purple-500/20">
-                              Admin
+                              admin
                             </span>
                           ) : (
                             <span className="text-slate-500 text-sm">User</span>
@@ -385,7 +390,9 @@ export default function AdminPage() {
                           )}
                         </td>
                         <td className="p-4 text-slate-300 text-sm">
-                          {user.passwordUpdatedAt ? new Date(user.passwordUpdatedAt).toLocaleString() : "Never"}
+                          {user.passwordUpdatedAt
+                            ? new Date(user.passwordUpdatedAt).toLocaleString()
+                            : "Never"}
                         </td>
                       </tr>
                     ))}
@@ -399,23 +406,27 @@ export default function AdminPage() {
 
       {/* User Details Modal */}
       {selectedUser && (
-        <div 
+        <div
           className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
           onClick={() => setSelectedUser(null)}
         >
-          <Card 
+          <Card
             className="w-full max-w-md p-6 bg-slate-900 border-slate-800 shadow-xl space-y-6"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="space-y-4">
               <div className="flex justify-between items-start">
                 <div>
-                  <h3 className="text-xl font-semibold text-slate-100">{selectedUser.username}</h3>
-                  <p className="text-sm text-slate-400 font-mono">{selectedUser.email || "No email"}</p>
+                  <h3 className="text-xl font-semibold text-slate-100">
+                    {selectedUser.username}
+                  </h3>
+                  <p className="text-sm text-slate-400 font-mono">
+                    {selectedUser.email || "No email"}
+                  </p>
                 </div>
                 {selectedUser.isAdmin && (
                   <span className="px-2 py-1 rounded-full text-xs font-medium bg-purple-500/10 text-purple-400 border border-purple-500/20">
-                    Admin
+                    admin
                   </span>
                 )}
               </div>
@@ -423,24 +434,34 @@ export default function AdminPage() {
               <div className="grid gap-2 text-sm">
                 <div className="flex justify-between py-2 border-b border-slate-800">
                   <span className="text-slate-400">User ID</span>
-                  <span className="font-mono text-slate-300">{selectedUser.id}</span>
+                  <span className="font-mono text-slate-300">
+                    {selectedUser.id}
+                  </span>
                 </div>
                 <div className="flex justify-between py-2 border-b border-slate-800">
                   <span className="text-slate-400">Status</span>
-                  <span className={selectedUser.enabled ? "text-green-400" : "text-slate-500"}>
+                  <span
+                    className={
+                      selectedUser.enabled ? "text-green-400" : "text-slate-500"
+                    }
+                  >
                     {selectedUser.enabled ? "Active" : "Disabled"}
                   </span>
                 </div>
                 <div className="flex justify-between py-2 border-b border-slate-800">
                   <span className="text-slate-400">Password Updated</span>
                   <span className="text-slate-300">
-                    {selectedUser.passwordUpdatedAt ? new Date(selectedUser.passwordUpdatedAt).toLocaleString() : "Never"}
+                    {selectedUser.passwordUpdatedAt
+                      ? new Date(
+                          selectedUser.passwordUpdatedAt,
+                        ).toLocaleString()
+                      : "Never"}
                   </span>
                 </div>
               </div>
 
               <div className="pt-4 flex flex-col gap-3">
-                <Button 
+                <Button
                   onClick={() => {
                     openPasswordReset(selectedUser);
                     setSelectedUser(null);
@@ -449,7 +470,7 @@ export default function AdminPage() {
                 >
                   Update Password
                 </Button>
-                <Button 
+                <Button
                   onClick={() => {
                     confirmDelete(selectedUser);
                     setSelectedUser(null);
@@ -458,7 +479,7 @@ export default function AdminPage() {
                 >
                   Delete User
                 </Button>
-                <Button 
+                <Button
                   onClick={() => setSelectedUser(null)}
                   className="w-full bg-slate-800 text-slate-300 hover:bg-slate-700"
                 >
@@ -472,24 +493,31 @@ export default function AdminPage() {
 
       {/* Password Reset Modal */}
       {passwordResetUser && (
-        <div 
+        <div
           className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
           onClick={closePasswordReset}
         >
-          <Card 
+          <Card
             className="w-full max-w-md p-6 bg-slate-900 border-slate-800 shadow-xl space-y-6"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="space-y-2">
-              <h3 className="text-xl font-semibold text-slate-100">Update Password</h3>
+              <h3 className="text-xl font-semibold text-slate-100">
+                Update Password
+              </h3>
               <p className="text-sm text-slate-400">
-                Set a new password for <span className="text-slate-200 font-medium">{passwordResetUser.username}</span>
+                Set a new password for{" "}
+                <span className="text-slate-200 font-medium">
+                  {passwordResetUser.username}
+                </span>
               </p>
             </div>
 
             <form onSubmit={handleUpdateUserPassword} className="space-y-4">
               <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-300">New Password</label>
+                <label className="text-sm font-medium text-slate-300">
+                  New Password
+                </label>
                 <input
                   type="password"
                   value={newPassword}
@@ -500,7 +528,9 @@ export default function AdminPage() {
                 />
               </div>
               <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-300">Confirm Password</label>
+                <label className="text-sm font-medium text-slate-300">
+                  Confirm Password
+                </label>
                 <input
                   type="password"
                   value={confirmPassword}
@@ -522,10 +552,19 @@ export default function AdminPage() {
               )}
 
               <div className="flex justify-end gap-3 pt-2">
-                <Button type="button" onClick={closePasswordReset} disabled={isResettingPassword} className="bg-transparent border-slate-700 hover:bg-slate-800 text-slate-300">
+                <Button
+                  type="button"
+                  onClick={closePasswordReset}
+                  disabled={isResettingPassword}
+                  className="bg-transparent border-slate-700 hover:bg-slate-800 text-slate-300"
+                >
                   Cancel
                 </Button>
-                <Button type="submit" disabled={isResettingPassword} className="bg-blue-600 hover:bg-blue-700 text-white">
+                <Button
+                  type="submit"
+                  disabled={isResettingPassword}
+                  className="bg-blue-600 hover:bg-blue-700 text-white"
+                >
                   {isResettingPassword ? "Updating..." : "Update Password"}
                 </Button>
               </div>

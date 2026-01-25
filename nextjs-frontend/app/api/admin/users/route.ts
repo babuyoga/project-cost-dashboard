@@ -13,7 +13,7 @@ export async function GET() {
 
   try {
     const stmt = db.prepare(`
-      SELECT id, username, email, enabled, created_at as createdAt, updated_at as updatedAt, password_updated_at as passwordUpdatedAt 
+      SELECT id, username, email, enabled, is_admin, created_at as createdAt, updated_at as updatedAt, password_updated_at as passwordUpdatedAt 
       FROM users
     `);
     const users = stmt.all();
