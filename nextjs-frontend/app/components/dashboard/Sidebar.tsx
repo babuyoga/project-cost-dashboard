@@ -19,15 +19,30 @@ export function Sidebar() {
   const [isInitializing, setIsInitializing] = useState(false);
   const [periods, setPeriods] = useState<string[]>([]);
   const [projects, setProjects] = useState<number[]>([]);
+  const [username, setUsername] = useState<string>("Username");
 
   const initializeData = async () => {
     setIsInitializing(true);
     const startTime = Date.now();
     // Don't clear error yet, so the box stays visible while loading
     try {
-      const [periodsResult, projectsResult] = await Promise.allSettled([
+      // Fetch user info in parallel with other data
+      const fetchUser = async () => {
+        try {
+          const res = await fetch("/api/auth/me");
+          if (res.ok) {
+            const data = await res.json();
+            setUsername(data.username);
+          }
+        } catch (error) {
+          console.error("Failed to fetch user", error);
+        }
+      };
+
+      const [periodsResult, projectsResult, _userResult] = await Promise.allSettled([
         fetchPeriods(),
-        fetchProjects()
+        fetchProjects(),
+        fetchUser()
       ]);
 
       if (periodsResult.status === 'fulfilled') {
@@ -199,7 +214,7 @@ export function Sidebar() {
               <div className="h-8 w-8 rounded-full bg-blue-600/20 flex items-center justify-center border border-blue-600/30 text-blue-400">
                 <User size={16} />
               </div>
-              <span className="text-sm font-medium text-slate-200">Username</span>
+              <span className="text-sm font-medium text-slate-200">{username}</span>
             </Link>
             <button 
               onClick={handleSignOut} 

@@ -3,9 +3,26 @@
 import { LogOut, User, LayoutDashboard, Shield, Database } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
 
 export function AdminSidebar() {
   const pathname = usePathname();
+  const [username, setUsername] = useState<string>("Username");
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const res = await fetch("/api/auth/me");
+        if (res.ok) {
+          const data = await res.json();
+          setUsername(data.username);
+        }
+      } catch (error) {
+        console.error("Failed to fetch user", error);
+      }
+    };
+    fetchUser();
+  }, []);
 
   const routes = [
     {
@@ -22,17 +39,17 @@ export function AdminSidebar() {
       newTab: false,
     },
     {
-      label: "API Explorer",
-      icon: Database,
-      href: "/api-explorer",
-      color: "text-pink-700",
-    },
-    {
       label: "Sessions",
       icon: LogOut,
       href: "/admin/session",
       color: "text-orange-500",
       newTab: false,
+    },
+    {
+      label: "API Explorer",
+      icon: Database,
+      href: "/api-explorer",
+      color: "text-pink-700",
     },
   ];
 
@@ -86,7 +103,7 @@ export function AdminSidebar() {
               <div className="h-8 w-8 rounded-full bg-blue-600/20 flex items-center justify-center border border-blue-600/30 text-blue-400">
                 <User size={16} />
               </div>
-              <span className="text-sm font-medium text-slate-200">Username</span>
+              <span className="text-sm font-medium text-slate-200">{username}</span>
             </Link>
             <button 
               onClick={handleSignOut} 
