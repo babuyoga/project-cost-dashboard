@@ -371,11 +371,13 @@ export default function AdminPage() {
                         </td>
                         <td className="p-4 text-slate-200">
                           {user.isAdmin? (
-                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-500/10 text-purple-400 border border-purple-500/20">
-                              admin
+                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-orange-500/10 text-orange-400 border border-orange-500/20">
+                              Admin
                             </span>
                           ) : (
-                            <span className="text-slate-500 text-sm">User</span>
+                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-500/10 text-purple-400 border border-purple-500/20">
+                              User
+                            </span>
                           )}
                         </td>
                         <td className="p-4 text-slate-200">
