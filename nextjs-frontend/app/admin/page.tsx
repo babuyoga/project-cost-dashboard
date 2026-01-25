@@ -346,7 +346,6 @@ export default function AdminPage() {
                       <th className="p-4 font-medium">Role</th>
                       <th className="p-4 font-medium">Status</th>
                       <th className="p-4 font-medium">Password Updated</th>
-                      <th className="p-4 font-medium">Password Updated</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-800">
