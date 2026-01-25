@@ -35,6 +35,16 @@ export function AdminSidebar() {
     },
   ];
 
+  const handleSignOut = async () => {
+    try {
+      await fetch("/api/auth/logout", { method: "POST" });
+    } catch (err) {
+      console.error("Logout failed", err);
+    } finally {
+      window.location.href = "/";
+    }
+  };
+
   return (
     <aside className="relative flex flex-col h-screen flex-shrink-0 w-[280px] border-r border-slate-800 bg-slate-950 text-white transition-all duration-300">
       
@@ -71,14 +81,14 @@ export function AdminSidebar() {
       {/* Footer with User Info */}
       <div className="border-t border-slate-800 bg-slate-950 flex-shrink-0 z-50 p-6">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
+            <Link href="/settings" className="flex items-center gap-3 hover:bg-slate-800/50 p-2 rounded transition-colors -ml-2">
               <div className="h-8 w-8 rounded-full bg-blue-600/20 flex items-center justify-center border border-blue-600/30 text-blue-400">
                 <User size={16} />
               </div>
               <span className="text-sm font-medium text-slate-200">Username</span>
-            </div>
+            </Link>
             <button 
-              onClick={() => window.location.href = '/'} 
+              onClick={handleSignOut} 
               className="group relative p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded transition-colors"
             >
               <LogOut size={18} />

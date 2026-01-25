@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useDashboardStore } from "@/app/store/useDashboardStore";
 import { fetchPeriods, fetchProjects } from "@/app/lib/api";
 
+import Link from "next/link";
 import { ChevronLeft, ChevronRight, LogOut, User } from "lucide-react";
 
 function formatPeriod(period: string) {
@@ -59,6 +60,16 @@ export function Sidebar() {
       }
       
       setIsInitializing(false);
+    }
+  };
+
+  const handleSignOut = async () => {
+    try {
+      await fetch("/api/auth/logout", { method: "POST" });
+    } catch (err) {
+      console.error("Logout failed", err);
+    } finally {
+      window.location.href = "/";
     }
   };
 
@@ -184,14 +195,14 @@ export function Sidebar() {
       <div className={`border-t border-slate-800 bg-slate-950 flex-shrink-0 z-50 ${isSidebarCollapsed ? 'p-4 flex flex-col items-center' : 'p-6'}`}>
         {!isSidebarCollapsed ? (
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
+            <Link href="/settings" className="flex items-center gap-3 hover:bg-slate-800/50 p-2 rounded transition-colors -ml-2">
               <div className="h-8 w-8 rounded-full bg-blue-600/20 flex items-center justify-center border border-blue-600/30 text-blue-400">
                 <User size={16} />
               </div>
               <span className="text-sm font-medium text-slate-200">Username</span>
-            </div>
+            </Link>
             <button 
-              onClick={() => window.location.href = '/'} 
+              onClick={handleSignOut} 
               className="group relative p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded transition-colors"
             >
               <LogOut size={18} />
@@ -204,11 +215,11 @@ export function Sidebar() {
           </div>
         ) : (
           <div className="flex flex-col items-center gap-4 w-full">
-            <div className="h-8 w-8 rounded-full bg-blue-600/20 flex items-center justify-center border border-blue-600/30 text-blue-400" title="Username">
+            <Link href="/settings" className="h-8 w-8 rounded-full bg-blue-600/20 flex items-center justify-center border border-blue-600/30 text-blue-400 hover:bg-blue-600/30 transition-colors" title="Settings">
                 <User size={16} />
-            </div>
+            </Link>
             <button 
-              onClick={() => window.location.href = '/'}
+              onClick={handleSignOut}
               className="group relative p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded transition-colors"
             >
               <LogOut size={18} />

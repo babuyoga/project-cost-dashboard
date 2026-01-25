@@ -4,11 +4,16 @@ import db from "@/app/lib/db";
 import bcrypt from "bcryptjs";
 import { v4 as uuidv4 } from "uuid";
 
+import { validateAdminRequest } from "@/app/lib/guard";
+
 // GET /api/admin/users - List all users
 export async function GET() {
+  const unauthorized = await validateAdminRequest();
+  if (unauthorized) return unauthorized;
+
   try {
     const stmt = db.prepare(`
-      SELECT id, username, enabled, created_at as createdAt, updated_at as updatedAt 
+      SELECT id, username, email, enabled, created_at as createdAt, updated_at as updatedAt, password_updated_at as passwordUpdatedAt 
       FROM users
     `);
     const users = stmt.all();
@@ -31,9 +36,12 @@ export async function GET() {
 
 // POST /api/admin/users - Create a new user
 export async function POST(req: NextRequest) {
+  const unauthorized = await validateAdminRequest();
+  if (unauthorized) return unauthorized;
+
   try {
     const body = await req.json();
-    const { username, password, enabled } = body;
+    const { username, password, email, enabled } = body;
 
     if (!username || !password) {
       return NextResponse.json(
@@ -48,12 +56,12 @@ export async function POST(req: NextRequest) {
     const isAdministrator = 0; // Always false for API creation
 
     const stmt = db.prepare(`
-      INSERT INTO users (id, username, password_hash, enabled, is_admin)
-      VALUES (?, ?, ?, ?, ?)
+      INSERT INTO users (id, username, email, password_hash, enabled, is_admin)
+      VALUES (?, ?, ?, ?, ?, ?)
     `);
 
     try {
-      stmt.run(id, username, passwordHash, isEnabled, isAdministrator);
+      stmt.run(id, username, email || null, passwordHash, isEnabled, isAdministrator);
     } catch (err: any) {
       if (err.code === 'SQLITE_CONSTRAINT_UNIQUE') {
         return NextResponse.json(

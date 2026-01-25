@@ -2,15 +2,20 @@
 import { NextRequest, NextResponse } from "next/server";
 import db from "@/app/lib/db";
 
+import { validateAdminRequest } from "@/app/lib/guard";
+
 // GET /api/admin/users/[userId] - Get a single user
 export async function GET(
   req: NextRequest, 
   { params }: { params: Promise<{ userId: string }> }
 ) {
+  const unauthorized = await validateAdminRequest();
+  if (unauthorized) return unauthorized;
+
   try {
     const { userId } = await params;
     const stmt = db.prepare(`
-      SELECT id, username, enabled, is_admin as isAdmin, created_at as createdAt, updated_at as updatedAt 
+      SELECT id, username, email, enabled, is_admin as isAdmin, created_at as createdAt, updated_at as updatedAt, password_updated_at as passwordUpdatedAt 
       FROM users WHERE id = ?
     `);
     
@@ -42,14 +47,17 @@ export async function PUT(
   req: NextRequest, 
   { params }: { params: Promise<{ userId: string }> }
 ) {
+  const unauthorized = await validateAdminRequest();
+  if (unauthorized) return unauthorized;
+
   try {
     const { userId } = await params;
     const body = await req.json();
-    const { username, enabled, isAdmin } = body;
+    const { username, email, enabled, isAdmin } = body;
 
-    if (!username && enabled === undefined && isAdmin === undefined) {
+    if (!username && email === undefined && enabled === undefined && isAdmin === undefined) {
       return NextResponse.json(
-        { error: "At least one field (username, enabled, isAdmin) is required", code: "VALIDATION_ERROR" },
+        { error: "At least one field (username, email, enabled, isAdmin) is required", code: "VALIDATION_ERROR" },
         { status: 400 }
       );
     }
@@ -61,6 +69,10 @@ export async function PUT(
     if (username) {
       updates.push("username = ?");
       values.push(username);
+    }
+    if (email !== undefined) {
+      updates.push("email = ?");
+      values.push(email);
     }
     if (enabled !== undefined) {
       updates.push("enabled = ?");
@@ -127,6 +139,9 @@ export async function DELETE(
   req: NextRequest, 
   { params }: { params: Promise<{ userId: string }> }
 ) {
+  const unauthorized = await validateAdminRequest();
+  if (unauthorized) return unauthorized;
+
   try {
      const { userId } = await params;
      

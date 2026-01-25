@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 interface User {
   userId: string;
   username: string;
+  email?: string;
   isAdmin: boolean;
 }
 
@@ -42,6 +43,7 @@ export function useAuthGuard(options: UseAuthGuardOptions = {}): UseAuthGuardRes
           setUser({
             userId: data.userId,
             username: data.username,
+            email: data.email,
             isAdmin: data.isAdmin
           });
           setAuthorized(true);

@@ -3,7 +3,7 @@
 import { Card } from "@/app/components/ui/card";
 import { Button } from "@/app/components/ui/button";
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 
 export default function LoginPage() {
@@ -12,6 +12,25 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const response = await fetch("/api/auth/me");
+        if (response.ok) {
+          const data = await response.json();
+          if (data.isAdmin) {
+             router.replace("/admin");
+          } else {
+             router.replace("/dashboard");
+          }
+        }
+      } catch (err) {
+        // Not authenticated, just stay on login page
+      }
+    };
+    checkAuth();
+  }, [router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

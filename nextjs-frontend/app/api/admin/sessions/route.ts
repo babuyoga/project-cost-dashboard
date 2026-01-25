@@ -2,8 +2,13 @@
 import { NextResponse } from "next/server";
 import db from "@/app/lib/db";
 
+import { validateAdminRequest } from "@/app/lib/guard";
+
 // GET /api/admin/sessions - List all sessions
 export async function GET() {
+  const unauthorized = await validateAdminRequest();
+  if (unauthorized) return unauthorized;
+
   try {
     const stmt = db.prepare(`
       SELECT 

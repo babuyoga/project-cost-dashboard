@@ -2,11 +2,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import db from "@/app/lib/db";
 
+import { validateAdminRequest } from "@/app/lib/guard";
+
 // POST /api/admin/users/[userId]/enable
 export async function POST(
   req: NextRequest, 
   { params }: { params: Promise<{ userId: string }> }
 ) {
+  const unauthorized = await validateAdminRequest();
+  if (unauthorized) return unauthorized;
+
   try {
     const { userId } = await params;
 

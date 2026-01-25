@@ -3,11 +3,16 @@ import { NextRequest, NextResponse } from "next/server";
 import db from "@/app/lib/db";
 import bcrypt from "bcryptjs";
 
+import { validateAdminRequest } from "@/app/lib/guard";
+
 // PATCH /api/admin/users/[userId]/password
 export async function PATCH(
   req: NextRequest, 
   { params }: { params: Promise<{ userId: string }> }
 ) {
+  const unauthorized = await validateAdminRequest();
+  if (unauthorized) return unauthorized;
+
   try {
     const { userId } = await params;
     const body = await req.json();
@@ -24,7 +29,7 @@ export async function PATCH(
 
     const stmt = db.prepare(`
       UPDATE users 
-      SET password_hash = ?, updated_at = datetime('now') 
+      SET password_hash = ?, updated_at = datetime('now'), password_updated_at = datetime('now') 
       WHERE id = ?
     `);
 

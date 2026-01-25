@@ -35,7 +35,7 @@ export async function GET() {
 
     // 4. Query user from database
     const user = db.prepare(`
-      SELECT id, username, enabled, is_admin
+      SELECT id, username, email, enabled, is_admin
       FROM users
       WHERE id = ?
     `).get(session.user_id) as any;
@@ -62,6 +62,7 @@ export async function GET() {
     return NextResponse.json({
       userId: user.id,
       username: user.username,
+      email: user.email,
       isAdmin: Boolean(user.is_admin)
     });
 

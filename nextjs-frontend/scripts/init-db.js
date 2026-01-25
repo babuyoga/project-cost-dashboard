@@ -14,11 +14,13 @@ db.exec(`
   CREATE TABLE IF NOT EXISTS users (
     id TEXT PRIMARY KEY,
     username TEXT UNIQUE NOT NULL,
+    email TEXT,
     password_hash TEXT NOT NULL,
     enabled INTEGER DEFAULT 1,
     is_admin INTEGER DEFAULT 0,
     created_at TEXT DEFAULT (datetime('now')),
-    updated_at TEXT DEFAULT (datetime('now'))
+    updated_at TEXT DEFAULT (datetime('now')),
+    password_updated_at TEXT
   )
 `);
 console.log('Created users table');
@@ -50,8 +52,8 @@ try {
     const userId = uuidv4();
 
     db.prepare(`
-      INSERT INTO users (id, username, password_hash, enabled, is_admin)
-      VALUES (?, ?, ?, 1, 1)
+      INSERT INTO users (id, username, email, password_hash, enabled, is_admin)
+      VALUES (?, ?, NULL, ?, 1, 1)
     `).run(userId, adminUsername, hash);
     
     console.log(`Created admin user: ${adminUsername}`);

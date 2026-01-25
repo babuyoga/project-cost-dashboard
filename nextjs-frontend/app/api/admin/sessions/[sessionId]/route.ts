@@ -2,11 +2,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import db from "@/app/lib/db";
 
+import { validateAdminRequest } from "@/app/lib/guard";
+
 // DELETE /api/admin/sessions/[sessionId] - Invalidate a specific session
 export async function DELETE(
   req: NextRequest,
   { params }: { params: Promise<{ sessionId: string }> }
 ) {
+  const unauthorized = await validateAdminRequest();
+  if (unauthorized) return unauthorized;
+
   try {
     const { sessionId } = await params;
 

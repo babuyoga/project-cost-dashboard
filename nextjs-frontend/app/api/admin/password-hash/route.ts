@@ -2,8 +2,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 
+import { validateAdminRequest } from "@/app/lib/guard";
+
 // POST /api/admin/password-hash - Generate bcrypt hash
 export async function POST(req: NextRequest) {
+  const unauthorized = await validateAdminRequest();
+  if (unauthorized) return unauthorized;
+
   try {
     const body = await req.json();
     const { password } = body;
