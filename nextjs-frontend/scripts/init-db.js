@@ -38,9 +38,16 @@ db.exec(`
 `);
 console.log('Created sessions table');
 
+// Load environment variables
+require('dotenv').config({ path: path.join(__dirname, '..', '.env') });
+
 // Create default admin user
-const adminUsername = 'amrinkareem';
-const adminPassword = 'armin67tyfg^&';
+const adminUsername = process.env.ADMIN_USERNAME;
+const adminPassword = process.env.ADMIN_PASSWORD;
+
+if (!adminUsername || !adminPassword) {
+  console.warn('Warning: ADMIN_USERNAME or ADMIN_PASSWORD not set in .env. Skipping admin user creation.');
+} else {
 
 try {
   // Check if admin already exists
@@ -64,6 +71,7 @@ try {
   }
 } catch (error) {
   console.error('Error creating admin user:', error);
+}
 }
 
 db.close();
