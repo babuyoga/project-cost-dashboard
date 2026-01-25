@@ -19,11 +19,10 @@ services:
       context: ./backend-api
       dockerfile: Dockerfile
     container_name: dashboard-backend
-    # Intentionally NOT exposing port 8000 to host machine
-    # ports:
-    #   - "8000:8000"
     environment:
-      - DB_DRIVER=ODBC Driver 18 for SQL Server
+      - SQLITE_DB_PATH=/data/app.db
+    volumes:
+      - sqlite_data:/data
     networks:
       - dashboard-network
     restart: always
@@ -31,3 +30,6 @@ services:
 networks:
   dashboard-network:
     driver: bridge
+
+volumes:
+  sqlite_data:
