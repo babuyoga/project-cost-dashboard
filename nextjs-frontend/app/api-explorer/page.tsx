@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { useAuthGuard } from "@/app/hooks/useAuthGuard";
+import { useRouter } from "next/navigation";
 
 // --- Endpoint Definitions ---
 type EndpointConfig = {
@@ -62,6 +64,7 @@ const ENDPOINTS: EndpointConfig[] = [
 ];
 
 export default function ApiExplorerPage() {
+  const { loading: authLoading, authorized } = useAuthGuard();
   const [selectedEndpoint, setSelectedEndpoint] = useState<EndpointConfig>(
     ENDPOINTS[0],
   );
@@ -146,6 +149,18 @@ export default function ApiExplorerPage() {
       setLoading(false);
     }
   };
+
+  if (authLoading) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-[#020b1c]">
+        <div className="text-slate-400">Loading...</div>
+      </div>
+    );
+  }
+
+  if (!authorized) {
+    return null;
+  }
 
   return (
     <div className="min-h-screen bg-[#020b1c] text-slate-100 p-8 flex flex-col gap-6">

@@ -1,19 +1,25 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ConfirmationModal } from "@/app/components/ui/ConfirmationModal";
 import { Card } from "@/app/components/ui/card";
 import { Button } from "@/app/components/ui/button";
+import { useAuthGuard } from "@/app/hooks/useAuthGuard";
+
 
 interface User {
   id: string;
   username: string;
+  enabled?: boolean;
+  isAdmin?: boolean;
 }
 
 export default function AdminPage() {
+  const { loading, authorized } = useAuthGuard({ requireAdmin: true });
+
   // State for Users List
   const [users, setUsers] = useState<User[]>([]);
-  const [isLoadingUsers, setIsLoadingUsers] = useState(false); // Can be used for initial fetch simulation
+  const [isLoadingUsers, setIsLoadingUsers] = useState(true);
 
   // State for Add User Form
   const [username, setUsername] = useState("");
@@ -26,6 +32,29 @@ export default function AdminPage() {
   const [userToDelete, setUserToDelete] = useState<User | null>(null);
   const [isDeletingUser, setIsDeletingUser] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+
+  // Fetch users on mount
+  useEffect(() => {
+    if (!authorized) return;
+    
+    const fetchUsers = async () => {
+      try {
+        const response = await fetch("/api/admin/users");
+        if (response.ok) {
+          const data = await response.json();
+          setUsers(data.users);
+        } else {
+          console.error("Failed to fetch users");
+        }
+      } catch (error) {
+        console.error("Error fetching users:", error);
+      } finally {
+        setIsLoadingUsers(false);
+      }
+    };
+
+    fetchUsers();
+  }, [authorized]);
 
   // --- Add User Logic ---
   const handleAddUser = async (e: React.FormEvent) => {
@@ -46,20 +75,27 @@ export default function AdminPage() {
     setIsAddingUser(true);
 
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      const response = await fetch("/api/admin/users", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ username, password }),
+      });
 
-      const newUser: User = {
-        id: Math.random().toString(36).substr(2, 9),
-        username: username,
-      };
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to add user");
+      }
+
+      const newUser: User = await response.json();
 
       setUsers((prev) => [...prev, newUser]);
       setAddSuccess(`User "${username}" added successfully.`);
       setUsername("");
       setPassword("");
-    } catch (err) {
-      setAddError("Something went wrong. Please try again.");
+    } catch (err: any) {
+      setAddError(err.message || "Something went wrong. Please try again.");
     } finally {
       setIsAddingUser(false);
     }
@@ -83,8 +119,13 @@ export default function AdminPage() {
     setDeleteError(null);
 
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      const response = await fetch(`/api/admin/users/${userToDelete.id}`, {
+        method: "DELETE",
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to delete user");
+      }
 
       setUsers((prev) => prev.filter((u) => u.id !== userToDelete.id));
       setUserToDelete(null); // Close modal on success
@@ -94,6 +135,19 @@ export default function AdminPage() {
       setIsDeletingUser(false);
     }
   };
+
+  // Auth guards - after all hooks
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-950">
+        <div className="text-slate-400">Loading...</div>
+      </div>
+    );
+  }
+
+  if (!authorized) {
+    return null;
+  }
 
   return (
     <div className="min-h-screen bg-slate-950 p-8 text-slate-100 font-sans">
@@ -170,7 +224,9 @@ export default function AdminPage() {
         <section className="space-y-6">
           <h2 className="text-xl font-semibold text-slate-200">User List</h2>
           <Card className="overflow-hidden bg-slate-900 border-slate-800">
-            {users.length === 0 ? (
+            {isLoadingUsers ? (
+              <div className="p-8 text-center text-slate-500">Loading users...</div>
+            ) : users.length === 0 ? (
               <div className="p-8 text-center text-slate-500">
                 No users found.
               </div>
@@ -181,6 +237,8 @@ export default function AdminPage() {
                     <tr className="border-b border-slate-800 text-slate-400 text-sm">
                       <th className="p-4 font-medium">User ID</th>
                       <th className="p-4 font-medium">Username</th>
+                      <th className="p-4 font-medium">Role</th>
+                      <th className="p-4 font-medium">Status</th>
                       <th className="p-4 font-medium text-right">Actions</th>
                     </tr>
                   </thead>
@@ -192,6 +250,26 @@ export default function AdminPage() {
                         </td>
                         <td className="p-4 text-slate-200 font-medium">
                           {user.username}
+                        </td>
+                        <td className="p-4 text-slate-200">
+                          {user.isAdmin ? (
+                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-500/10 text-purple-400 border border-purple-500/20">
+                              Admin
+                            </span>
+                          ) : (
+                            <span className="text-slate-500 text-sm">User</span>
+                          )}
+                        </td>
+                        <td className="p-4 text-slate-200">
+                          {user.enabled ? (
+                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-500/10 text-green-400 border border-green-500/20">
+                              Active
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-slate-500/10 text-slate-500 border border-slate-500/20">
+                              Disabled
+                            </span>
+                          )}
                         </td>
                         <td className="p-4 text-right">
                           <button
@@ -221,18 +299,6 @@ export default function AdminPage() {
         onCancel={cancelDelete}
         isLoading={isDeletingUser}
       />
-      
-      {/* Show error on modal if delete failed */}
-      {/* 
-         Note: The ConfirmationModal is somewhat simple. 
-         Ideally, error state is handled inside content or above it. 
-         To stick to constraints, we might just alert or show it elsewhere if modal stays open.
-         For this implementation, if error happens, modal stays open.
-         We can render the error via a small toast or just below the list if needed,
-         but effectively the modal handles the critical "processing" state.
-         If we wanted to show error INSIDE modal, we'd need to update the component props.
-         For now let's just stick to the simple one.
-      */ }
     </div>
   );
 }
