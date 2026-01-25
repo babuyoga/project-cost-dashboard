@@ -20,9 +20,24 @@ db.exec(`
     is_admin INTEGER DEFAULT 0,
     created_at TEXT DEFAULT (datetime('now')),
     updated_at TEXT DEFAULT (datetime('now')),
-    password_updated_at TEXT
+    password_updated_at TEXT,
+    tokenusage INTEGER DEFAULT 0
   )
 `);
+
+// Migration: Add tokenusage column if it doesn't exist
+try {
+  const tableInfo = db.prepare("PRAGMA table_info(users)").all();
+  const hasTokenUsage = tableInfo.some(col => col.name === 'tokenusage');
+  
+  if (!hasTokenUsage) {
+    console.log('Adding tokenusage column to users table...');
+    db.exec('ALTER TABLE users ADD COLUMN tokenusage INTEGER DEFAULT 0');
+    console.log('Added tokenusage column');
+  }
+} catch (error) {
+  console.error('Error checking/adding tokenusage column:', error);
+}
 console.log('Created users table');
 
 // Create sessions table
