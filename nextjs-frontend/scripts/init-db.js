@@ -1,10 +1,10 @@
-const Database = require('better-sqlite3');
-const path = require('path');
-const fs = require('fs');
-const bcrypt = require('bcryptjs');
-const { v4: uuidv4 } = require('uuid');
+const Database = require("better-sqlite3");
+const path = require("path");
+const fs = require("fs");
+const bcrypt = require("bcryptjs");
+const crypto = require("crypto");
 
-const dbPath = path.join(__dirname, '..', 'cost-dashboard.db');
+const dbPath = path.join(__dirname, "..", "cost-dashboard.db");
 const db = new Database(dbPath);
 
 console.log(`Initializing database at ${dbPath}`);
@@ -29,27 +29,28 @@ db.exec(`
 // Migration: Add tokenusage column if it doesn't exist
 try {
   const tableInfo = db.prepare("PRAGMA table_info(users)").all();
-  
+
   // Check for tokenusage
-  const hasTokenUsage = tableInfo.some(col => col.name === 'tokenusage');
+  const hasTokenUsage = tableInfo.some((col) => col.name === "tokenusage");
   if (!hasTokenUsage) {
-    console.log('Adding tokenusage column to users table...');
-    db.exec('ALTER TABLE users ADD COLUMN tokenusage INTEGER DEFAULT 0');
-    console.log('Added tokenusage column');
+    console.log("Adding tokenusage column to users table...");
+    db.exec("ALTER TABLE users ADD COLUMN tokenusage INTEGER DEFAULT 0");
+    console.log("Added tokenusage column");
   }
 
   // Check for is_first_login
-  const hasFirstTimeLogin = tableInfo.some(col => col.name === 'is_first_login');
+  const hasFirstTimeLogin = tableInfo.some(
+    (col) => col.name === "is_first_login",
+  );
   if (!hasFirstTimeLogin) {
-    console.log('Adding is_first_login column to users table...');
-    db.exec('ALTER TABLE users ADD COLUMN is_first_login INTEGER DEFAULT 1');
-    console.log('Added is_first_login column');
+    console.log("Adding is_first_login column to users table...");
+    db.exec("ALTER TABLE users ADD COLUMN is_first_login INTEGER DEFAULT 1");
+    console.log("Added is_first_login column");
   }
-
 } catch (error) {
-  console.error('Error checking/adding columns:', error);
+  console.error("Error checking/adding columns:", error);
 }
-console.log('Created users table');
+console.log("Created users table");
 
 // Create sessions table
 db.exec(`
@@ -62,43 +63,50 @@ db.exec(`
     FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
   )
 `);
-console.log('Created sessions table');
+console.log("Created sessions table");
 
 // Load environment variables
-require('dotenv').config({ path: path.join(__dirname, '..', '.env') });
+require("dotenv").config({ path: path.join(__dirname, "..", ".env") });
 
 // Create default admin user
 const adminUsername = process.env.ADMIN_USERNAME;
 const adminPassword = process.env.ADMIN_PASSWORD;
 
 if (!adminUsername || !adminPassword) {
-  console.warn('Warning: ADMIN_USERNAME or ADMIN_PASSWORD not set in .env. Skipping admin user creation.');
+  console.warn(
+    "Warning: ADMIN_USERNAME or ADMIN_PASSWORD not set in .env. Skipping admin user creation.",
+  );
 } else {
+  try {
+    // Check if admin already exists
+    const existingAdmin = db
+      .prepare("SELECT id FROM users WHERE username = ?")
+      .get(adminUsername);
 
-try {
-  // Check if admin already exists
-  const existingAdmin = db.prepare('SELECT id FROM users WHERE username = ?').get(adminUsername);
-  
-  if (!existingAdmin) {
-    const salt = bcrypt.genSaltSync(10);
-    const hash = bcrypt.hashSync(adminPassword, salt);
-    const userId = uuidv4();
+    if (!existingAdmin) {
+      const salt = bcrypt.genSaltSync(10);
+      const hash = bcrypt.hashSync(adminPassword, salt);
+      const userId = crypto.randomUUID();
 
-    db.prepare(`
+      db.prepare(
+        `
       INSERT INTO users (id, username, email, password_hash, enabled, is_admin)
       VALUES (?, ?, NULL, ?, 1, 1)
-    `).run(userId, adminUsername, hash);
-    
-    console.log(`Created admin user: ${adminUsername}`);
-  } else {
-    // Ensure existing admin user has admin privileges
-    db.prepare('UPDATE users SET is_admin = 1 WHERE username = ?').run(adminUsername);
-    console.log(`Ensured admin privileges for user: ${adminUsername}`);
+    `,
+      ).run(userId, adminUsername, hash);
+
+      console.log(`Created admin user: ${adminUsername}`);
+    } else {
+      // Ensure existing admin user has admin privileges
+      db.prepare("UPDATE users SET is_admin = 1 WHERE username = ?").run(
+        adminUsername,
+      );
+      console.log(`Ensured admin privileges for user: ${adminUsername}`);
+    }
+  } catch (error) {
+    console.error("Error creating admin user:", error);
   }
-} catch (error) {
-  console.error('Error creating admin user:', error);
-}
 }
 
 db.close();
-console.log('Database initialization complete');
+console.log("Database initialization complete");
