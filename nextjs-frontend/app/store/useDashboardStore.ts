@@ -75,9 +75,14 @@ export const useDashboardStore = create<DashboardState>((set) => ({
 
   runAnalysis: () => set((state) => {
     // Validate filters
-    if (!state.fromPeriod || !state.toPeriod || !state.selectedProject) {
+    const missing: string[] = [];
+    if (!state.fromPeriod) missing.push("From Period");
+    if (!state.toPeriod) missing.push("To Period");
+    if (!state.selectedProject) missing.push("Project Number");
+
+    if (missing.length > 0) {
       return { 
-        validationMessage: "Please apply all filters (From Period, To Period, and Project Number) before running analysis." 
+        validationMessage: `Please select the following to run analysis: ${missing.join(', ')}` 
       };
     }
     return { isAnalysisRunning: true, validationMessage: null };

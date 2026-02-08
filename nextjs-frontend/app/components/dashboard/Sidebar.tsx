@@ -195,9 +195,7 @@ export function Sidebar() {
               className={`w-full rounded py-2.5 text-sm font-medium text-white transition-colors
                 ${isAnalysisRunning 
                   ? 'bg-blue-600/50 cursor-not-allowed' 
-                  : (!fromPeriod || !toPeriod || !selectedProject)
-                    ? 'bg-blue-600/50 hover:bg-blue-600/50 cursor-not-allowed'
-                    : 'bg-blue-600 hover:bg-blue-700'
+                  : 'bg-blue-600 hover:bg-blue-700'
                 }`}
               >
               {isAnalysisRunning ? 'Running...' : 'Run analysis'}

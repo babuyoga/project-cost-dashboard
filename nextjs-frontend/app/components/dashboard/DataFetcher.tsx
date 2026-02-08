@@ -32,14 +32,18 @@ export function DataFetcher() {
 
         Promise.all([p1, p2])
             .then(([overallData, comparisonData]) => {
-                // For comparison data, we need to extract the specific project if it exists
+                // For comparison data, we need to extract the specific project.
+                // The backend might return a key like "2171 & 2172" even if we requested "2171".
+                // Since we only request one project at a time, we can safely take the first value.
                 let projData = null;
-                if (comparisonData && selectedProject && selectedProject !== 'OVERALL') {
-                    // Start of Selection
-                    projData = comparisonData.projects[String(selectedProject)] || null;
+                if (comparisonData && comparisonData.projects) {
+                    const projects = Object.values(comparisonData.projects);
+                    if (projects.length > 0) {
+                        projData = projects[0];
+                    }
                 }
                 
-                setAnalysisData(overallData, projData);
+                setAnalysisData(overallData, projData as any);
             })
             .catch((err) => {
                 console.error("Analysis Failed:", err);
