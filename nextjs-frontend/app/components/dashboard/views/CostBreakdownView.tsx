@@ -137,7 +137,6 @@ export function CostBreakdownView({ depth }: CostBreakdownViewProps) {
     );
 }
 
-// Wrapper Components
-export const MainCostDriver = () => <CostBreakdownView depth="main" />;
+// Wrapper Components (MainCostDriver lives in MainCostDriverView.tsx)
 export const SubCategories = () => <CostBreakdownView depth="sub" />;
 export const SubSubCategories = () => <CostBreakdownView depth="subsub" />;

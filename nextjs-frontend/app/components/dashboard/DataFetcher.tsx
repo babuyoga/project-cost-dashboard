@@ -36,14 +36,17 @@ export function DataFetcher() {
                 // The backend might return a key like "2171 & 2172" even if we requested "2171".
                 // Since we only request one project at a time, we can safely take the first value.
                 let projData = null;
+                let projKey: string | null = null;
                 if (comparisonData && comparisonData.projects) {
+                    const keys = Object.keys(comparisonData.projects);
                     const projects = Object.values(comparisonData.projects);
                     if (projects.length > 0) {
                         projData = projects[0];
+                        projKey = keys[0];
                     }
                 }
                 
-                setAnalysisData(overallData, projData as any);
+                setAnalysisData(overallData, projData as any, projKey);
             })
             .catch((err) => {
                 console.error("Analysis Failed:", err);

@@ -5,10 +5,10 @@ import { AlertCircle, RefreshCw } from "lucide-react";
 import { useState } from "react";
 
 export function MockDataBanner() {
-  const { isMockData, mockDataUrl, setMockData } = useDashboardStore();
+  const { dataSource, dataSourceUrl } = useDashboardStore();
   const [isRetrying, setIsRetrying] = useState(false);
 
-  if (!isMockData) return null;
+  if (dataSource !== 'mock') return null;
 
   const handleRetry = () => {
     setIsRetrying(true);
@@ -22,7 +22,7 @@ export function MockDataBanner() {
         <div className="flex items-center gap-3">
             <AlertCircle className="h-5 w-5 text-amber-400" />
             <p className="text-sm font-medium">
-                This is currently using mock data. No data was received from <span className="font-mono text-amber-300">{mockDataUrl || "Backend URL"}</span>.
+                This is currently using mock data. No data was received from <span className="font-mono text-amber-300">{dataSourceUrl || "Backend URL"}</span>.
             </p>
         </div>
         <button

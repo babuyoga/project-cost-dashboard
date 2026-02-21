@@ -181,3 +181,23 @@ export async function fetchForecastComparison(
   );
   return data;
 }
+
+export async function fetchProjectSummary(
+  projectNo: number,
+  fromPeriod: string,
+  toPeriod: string,
+  metric: string,
+): Promise<string> {
+  console.log("[API] Fetching project summary for project:", projectNo);
+  const res = await fetch(
+    `${API_BASE_url}/analysis/summary/${projectNo}?from_period=${fromPeriod}&to_period=${toPeriod}&metric=${metric}`,
+  );
+  if (!res.ok) {
+    const errorMsg = await getErrorMessage(res);
+    console.warn("[API] Failed to fetch project summary. Status:", res.status, errorMsg);
+    throw new Error(errorMsg);
+  }
+  const data = await res.json();
+  console.log(`[API] Fetched project summary (${data.summary?.length || 0} chars)`);
+  return data.summary;
+}

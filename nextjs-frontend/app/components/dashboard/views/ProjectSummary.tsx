@@ -1,14 +1,27 @@
 
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useDashboardStore } from "@/app/store/useDashboardStore";
+import { fetchProjectSummary } from "@/app/lib/api";
 import { Card } from "@/app/components/ui/card";
 import { TrendLineChart } from "../charts/TrendLineChart";
+import { ChevronDown } from "lucide-react";
+
+/** Format a number in thousands to "X.XX million" display */
+function toMillions(value: number): string {
+  return `${(value / 1000).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} million`;
+}
 
 export function ProjectSummary() {
-  const { metric, projectAnalysisData, analysisLoading, analysisError } = useDashboardStore();
+  const { 
+    metric, projectAnalysisData, projectKey, analysisLoading, analysisError,
+    fromPeriod, toPeriod, selectedProject 
+  } = useDashboardStore();
   
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [isDownloadingSummary, setIsDownloadingSummary] = useState(false);
+
   if (analysisLoading) return <div className="text-white">Loading comparison...</div>;
   if (analysisError) return <div className="text-red-500">Error: {analysisError}</div>;
   
@@ -27,33 +40,194 @@ export function ProjectSummary() {
       ? data.total_forecast_costs_at_completion 
       : data.total_ytd_actual;
 
-  const diffColor = totalMetric.difference > 0 ? "text-red-500" : "text-green-500";
+  const metricLabel = metric === 'forecast_costs_at_completion' 
+      ? 'forecast_costs_at_completion' 
+      : 'ytd_actual';
+
+  const diffValue = totalMetric.difference;
+  const diffIsPositive = diffValue >= 0;
+
+  // --- Download Summary Handler ---
+  const handleDownloadSummary = async () => {
+    if (!selectedProject || selectedProject === 'OVERALL') return;
+    setIsDownloadingSummary(true);
+    try {
+      const summary = await fetchProjectSummary(
+        selectedProject as number,
+        fromPeriod,
+        toPeriod,
+        metric,
+      );
+      const blob = new Blob([summary], { type: "text/plain" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `project_${selectedProject}_summary.txt`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error("Failed to download summary:", err);
+    } finally {
+      setIsDownloadingSummary(false);
+    }
+  };
+
+  // --- Download Cost Breakdown Report Handler ---
+  const handleDownloadBreakdown = () => {
+    const rows: (string | number)[][] = [];
+    rows.push([
+      "Main Cost Type",
+      "Subcategory",
+      "Sub-subcategory",
+      `Period 1 (${totalMetric.period1})`,
+      `Period 2 (${totalMetric.period2})`,
+      "Difference",
+    ]);
+
+    for (const main of data.costline_increases_trajectory) {
+      // Add main cost type row
+      rows.push([
+        main.category,
+        "",
+        "",
+        main.file1_metric,
+        main.file2_metric,
+        main.difference,
+      ]);
+      for (const sub of main.subcategories) {
+        // Add subcategory row
+        rows.push([
+          main.category,
+          sub.category,
+          "",
+          sub.file1_metric,
+          sub.file2_metric,
+          sub.difference,
+        ]);
+        for (const child of sub.children) {
+          rows.push([
+            main.category,
+            sub.category,
+            child.category,
+            child.file1_metric,
+            child.file2_metric,
+            child.difference,
+          ]);
+        }
+      }
+    }
+
+    // Escape CSV fields that may contain commas
+    const csvContent = rows
+      .map((r) =>
+        r.map((cell) => {
+          const str = String(cell);
+          return str.includes(",") || str.includes('"')
+            ? `"${str.replace(/"/g, '""')}"`
+            : str;
+        }).join(",")
+      )
+      .join("\n");
+
+    const blob = new Blob([csvContent], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `project_${selectedProject}_cost_breakdown.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-        <Card className="p-6">
-          <h3 className="text-sm font-medium text-slate-400">Project Difference</h3>
-          <p className={`mt-2 text-3xl font-bold ${diffColor}`}>
-            {totalMetric.difference.toLocaleString()}
+      
+      {/* --- Section: Selected Project --- */}
+      <div>
+        <h2 className="text-lg font-semibold text-white">Project Summary</h2>
+        <p className="mt-1 text-sm text-slate-400">Selected Project</p>
+        
+        {/* Project Key Dropdown */}
+        <div className="relative mt-2 inline-block w-full max-w-md">
+          <button
+            onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+            className="flex w-full items-center justify-between rounded border border-slate-700 bg-slate-900 px-4 py-2.5 text-left text-sm text-white hover:border-slate-600 transition-colors"
+          >
+            <span>{projectKey || selectedProject}</span>
+            <ChevronDown 
+              size={16} 
+              className={`ml-2 text-slate-400 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} 
+            />
+          </button>
+          
+          {isDropdownOpen && (
+            <div className="absolute z-10 mt-1 w-full rounded border border-slate-700 bg-slate-900 p-3 shadow-xl">
+              <p className="text-sm text-slate-300 leading-relaxed">
+                {projectKey} — {data.project_meta.description} ({data.project_meta.client})
+              </p>
+            </div>
+          )}
+        </div>
+
+        {/* Full project description below dropdown */}
+        {!isDropdownOpen && (
+          <p className="mt-2 text-sm text-slate-400 leading-relaxed max-w-3xl">
+            {projectKey} — {data.project_meta.description} ({data.project_meta.client})
           </p>
-        </Card>
-        <Card className="p-6">
-          <h3 className="text-sm font-medium text-slate-400">Total ({totalMetric.period1})</h3>
-          <p className="mt-2 text-3xl font-bold text-white">
-            {totalMetric.file1.toLocaleString()}
-          </p>
-        </Card>
-        <Card className="p-6">
-          <h3 className="text-sm font-medium text-slate-400">Total ({totalMetric.period2})</h3>
-          <p className="mt-2 text-3xl font-bold text-white">
-            {totalMetric.file2.toLocaleString()}
-          </p>
-        </Card>
+        )}
       </div>
 
+      {/* --- Section: Project Difference --- */}
+      <div>
+        <h3 className="text-sm font-medium text-slate-400">Project difference</h3>
+        <p className="mt-1 text-3xl font-bold text-white">
+          {toMillions(diffValue)}
+        </p>
+      </div>
+
+      {/* --- Download Summary Button --- */}
+      <button
+        onClick={handleDownloadSummary}
+        disabled={isDownloadingSummary}
+        className="rounded border border-slate-600 bg-transparent px-4 py-2 text-sm font-medium text-white hover:bg-slate-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        {isDownloadingSummary ? "Downloading..." : "Download Summary"}
+      </button>
+
+      {/* --- Section: Period Totals --- */}
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+        <div>
+          <h3 className="text-sm font-medium text-slate-400">
+            Total {totalMetric.period1} {metricLabel}
+          </h3>
+          <p className="mt-2 text-3xl font-bold text-white">
+            {toMillions(totalMetric.file1)}
+          </p>
+        </div>
+        <div>
+          <h3 className="text-sm font-medium text-slate-400">
+            Total {totalMetric.period2} {metricLabel}
+          </h3>
+          <p className="mt-2 text-3xl font-bold text-white">
+            {toMillions(totalMetric.file2)}
+          </p>
+        </div>
+      </div>
+
+      {/* --- Difference Badge (Green/Red Pill) --- */}
+      <div>
+        <span
+          className={`inline-flex items-center rounded-full px-3 py-1 text-sm font-medium border ${
+            diffIsPositive
+              ? "bg-green-900/30 text-green-400 border-green-700"
+              : "bg-red-900/30 text-red-400 border-red-700"
+          }`}
+        >
+          {diffIsPositive ? "↑" : "↓"} {toMillions(Math.abs(diffValue))}
+        </span>
+      </div>
+
+      {/* --- Section: Trend Line Chart --- */}
       <Card className="p-6">
-        <h3 className="mb-4 text-lg font-medium text-white">Cost Trend</h3>
         <div className="h-[300px] w-full">
             <TrendLineChart 
                 p1Label={totalMetric.period1}
@@ -63,6 +237,14 @@ export function ProjectSummary() {
             />
         </div>
       </Card>
+
+      {/* --- Download Cost Breakdown Report Button --- */}
+      <button
+        onClick={handleDownloadBreakdown}
+        className="rounded border border-slate-600 bg-transparent px-4 py-2 text-sm font-medium text-white hover:bg-slate-800 transition-colors"
+      >
+        Download Cost Breakdown Report
+      </button>
     </div>
   );
 }
