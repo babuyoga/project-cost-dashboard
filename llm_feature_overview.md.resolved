@@ -1,0 +1,100 @@
+# LLM Feature — Finance Project Backend
+
+## Overview
+
+The LLM integration is a **chat/Q&A feature** that allows users to ask questions about financial analysis data. It is lightweight — a single function backed by a configurable external LLM REST API.
+
+---
+
+## 1. Configuration — [config.py](file:///Users/jerryjose/Code/Finance_Project/backend/app/config.py)
+
+All LLM settings are loaded from a `.env` file via `pydantic-settings`:
+
+| Setting | Description | Default |
+|---|---|---|
+| `LLM_URL` | URL of the external LLM API endpoint | _(required)_ |
+| `LLM_API_KEY` | Bearer token for auth | _(required)_ |
+| `LLM_TEMPERATURE` | Output randomness (lower = more deterministic) | `0.2` |
+| `LLM_MAX_TOKENS` | Maximum response length in tokens | `800` |
+
+---
+
+## 2. Core Function — [pipeline.py](file:///Users/jerryjose/Code/Finance_Project/backend/app/pipeline.py) → [chat_call()](file:///Users/jerryjose/Code/Finance_Project/backend/app/pipeline.py#400-414)
+
+```python
+def chat_call(user_input: str, system_prompt: str) -> str:
+    prompt = system_prompt + " Question: " + user_input
+    r = requests.post(
+        settings.LLM_URL,
+        data={
+            "prompt": prompt,
+            "temperature": settings.LLM_TEMPERATURE,
+            "max_tokens": settings.LLM_MAX_TOKENS,
+        },
+        headers={"Authorization": f"Bearer {settings.LLM_API_KEY}"},
+        timeout=120,
+    )
+    r.raise_for_status()
+    return r.json()["answer"]
+```
+
+**Key design choices:**
+- **System prompt is caller-supplied** — the frontend controls the LLM's context/persona, enabling dynamic injection of financial data without backend changes.
+- **Single-turn** — the system prompt and user question are concatenated into one `prompt` string. No chat history or session memory.
+- **Form-encoded body** — uses `data={}` (not JSON), so the LLM API must accept `application/x-www-form-urlencoded`.
+- **120-second timeout** — accommodates slower/local LLMs (e.g. Ollama).
+
+---
+
+## 3. API Endpoint — [main.py](file:///Users/jerryjose/Code/Finance_Project/backend/app/main.py) → `POST /api/chat`
+
+**Request** ([ChatRequest](file:///Users/jerryjose/Code/Finance_Project/backend/app/schemas.py#16-19) schema):
+```json
+{
+  "user_input": "Which project had the highest cost increase?",
+  "system_prompt": "You are a financial analyst assistant. The data covers..."
+}
+```
+
+**Response:**
+```json
+{ "answer": "<LLM response text>" }
+```
+
+Errors are forwarded as HTTP 500 with the exception detail.
+
+---
+
+## 4. Data Flow
+
+```
+Frontend
+  │
+  │  POST /api/chat  { user_input, system_prompt }
+  ▼
+FastAPI (main.py)
+  │
+  │  chat_call(user_input, system_prompt)
+  ▼
+pipeline.py :: chat_call()
+  │  Builds: prompt = system_prompt + " Question: " + user_input
+  │  POST → settings.LLM_URL  (Bearer auth, form-encoded)
+  ▼
+External LLM API
+  │  Returns { "answer": "..." }
+  ▼
+FastAPI → Frontend: { "answer": "..." }
+```
+
+---
+
+## 5. Key Observations
+
+> [!NOTE]
+> **No automatic DB context injection.** The backend does not automatically include financial data in the prompt. The frontend must craft the `system_prompt` with the relevant context (e.g. forecast values, project summaries).
+
+> [!TIP]
+> **LLM-agnostic design.** The implementation works with any REST LLM service that matches the expected request/response contract — making it straightforward to swap providers (e.g. Ollama → OpenAI-compatible API).
+
+- **Stateless** — each `/api/chat` call is fully independent; no conversation history is persisted.
+- **Frontend-driven context** — the `system_prompt` field acts as an escape hatch for injecting financial analysis context without needing backend changes.
