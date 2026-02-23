@@ -6,8 +6,12 @@ services:
     container_name: dashboard-frontend
     ports:
       - "3000:3000"
+    env_file: .env
     environment:
       - API_URL=http://backend:8000
+      - SQLITE_DB_PATH=/app/data/cost-dashboard.db
+    volumes:
+      - frontend_data:/app/data
     depends_on:
       - backend
     networks:
@@ -19,10 +23,7 @@ services:
       context: ./backend-api
       dockerfile: Dockerfile
     container_name: dashboard-backend
-    environment:
-      - SQLITE_DB_PATH=/data/app.db
-    volumes:
-      - sqlite_data:/data
+    env_file: .env
     networks:
       - dashboard-network
     restart: always
@@ -32,4 +33,4 @@ networks:
     driver: bridge
 
 volumes:
-  sqlite_data:
+  frontend_data:

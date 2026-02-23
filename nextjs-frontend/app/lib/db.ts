@@ -2,7 +2,7 @@ import Database from 'better-sqlite3';
 import path from 'path';
 
 // Singleton pattern for database connection
-const dbPath = path.join(process.cwd(), 'cost-dashboard.db');
+const dbPath = process.env.SQLITE_DB_PATH || path.join(process.cwd(), 'cost-dashboard.db');
 
 let db: Database.Database;
 
