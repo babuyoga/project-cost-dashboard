@@ -28,18 +28,25 @@ def chat(request: ChatRequest):
     Returns:
         { "answer": "<LLM response>" }
     """
-    logger.info("POST /api/chat")
-    logger.info(f"  user_input: {request.user_input[:80]}{'...' if len(request.user_input) > 80 else ''}")
-    logger.info(f"  system_prompt length: {len(request.system_prompt)} chars")
+    logger.info("=" * 60)
+    logger.info("POST /api/chat — INCOMING REQUEST")
+    logger.info(f"  user_input ({len(request.user_input)} chars): {request.user_input[:120]}{'...' if len(request.user_input) > 120 else ''}")
+    logger.info(f"  system_prompt ({len(request.system_prompt)} chars): {request.system_prompt[:120]}{'...' if len(request.system_prompt) > 120 else ''}")
+
+    if not request.system_prompt.strip():
+        logger.warning("  ⚠ system_prompt is EMPTY! The LLM has no context about the project.")
+    elif len(request.system_prompt) < 100:
+        logger.warning(f"  ⚠ system_prompt is very short ({len(request.system_prompt)} chars) — context may be insufficient.")
 
     try:
         answer = chat_call(request.user_input, request.system_prompt)
-        logger.info(f"  LLM responded with {len(answer)} chars")
+        logger.info(f"  ✓ LLM responded with {len(answer)} chars")
+        logger.info(f"  Answer preview: {answer[:200]}{'...' if len(answer) > 200 else ''}")
         return {"answer": answer}
     except ValueError as e:
         # LLM not configured
-        logger.warning(f"  LLM not configured: {e}")
+        logger.warning(f"  ✗ LLM not configured: {e}")
         raise HTTPException(status_code=503, detail=str(e))
     except Exception as e:
-        logger.error(f"  Chat failed: {str(e)}", exc_info=True)
+        logger.error(f"  ✗ Chat failed: {type(e).__name__}: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Chat failed: {str(e)}")

@@ -223,6 +223,7 @@ export function ProjectSummary() {
           toPeriod={toPeriod}
           metric={metric}
           projectKey={projectKey}
+          analysisData={data}
         />
       )}
     </div>
