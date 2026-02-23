@@ -201,3 +201,29 @@ export async function fetchProjectSummary(
   console.log(`[API] Fetched project summary (${data.summary?.length || 0} chars)`);
   return data.summary;
 }
+
+export async function downloadXlsx(
+  fromPeriod: string,
+  toPeriod: string,
+  projectNo: number,
+  metric: string,
+): Promise<Blob> {
+  console.log("[API] Requesting Excel cost breakdown report for project:", projectNo);
+  const res = await fetch(`${API_BASE_url}/download/xlsx`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      from_period: fromPeriod,
+      to_period: toPeriod,
+      project_no: projectNo,
+      metric,
+    }),
+  });
+  if (!res.ok) {
+    const errorMsg = await getErrorMessage(res);
+    console.warn("[API] Failed to download xlsx. Status:", res.status, errorMsg);
+    throw new Error(errorMsg);
+  }
+  console.log("[API] Excel report received successfully");
+  return res.blob();
+}

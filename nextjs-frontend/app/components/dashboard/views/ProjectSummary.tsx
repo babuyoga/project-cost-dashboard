@@ -3,7 +3,7 @@
 
 import { useState } from "react";
 import { useDashboardStore } from "@/app/store/useDashboardStore";
-import { fetchProjectSummary } from "@/app/lib/api";
+import { fetchProjectSummary, downloadXlsx } from "@/app/lib/api";
 import { Card } from "@/app/components/ui/card";
 import { TrendLineChart } from "../charts/TrendLineChart";
 import { ChevronDown } from "lucide-react";
@@ -21,6 +21,8 @@ export function ProjectSummary() {
   
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isDownloadingSummary, setIsDownloadingSummary] = useState(false);
+  const [isDownloadingBreakdown, setIsDownloadingBreakdown] = useState(false);
+  const [breakdownError, setBreakdownError] = useState<string | null>(null);
 
   if (analysisLoading) return <div className="text-white">Loading comparison...</div>;
   if (analysisError) return <div className="text-red-500">Error: {analysisError}</div>;
@@ -73,69 +75,29 @@ export function ProjectSummary() {
   };
 
   // --- Download Cost Breakdown Report Handler ---
-  const handleDownloadBreakdown = () => {
-    const rows: (string | number)[][] = [];
-    rows.push([
-      "Main Cost Type",
-      "Subcategory",
-      "Sub-subcategory",
-      `Period 1 (${totalMetric.period1})`,
-      `Period 2 (${totalMetric.period2})`,
-      "Difference",
-    ]);
-
-    for (const main of data.costline_increases_trajectory) {
-      // Add main cost type row
-      rows.push([
-        main.category,
-        "",
-        "",
-        main.file1_metric,
-        main.file2_metric,
-        main.difference,
-      ]);
-      for (const sub of main.subcategories) {
-        // Add subcategory row
-        rows.push([
-          main.category,
-          sub.category,
-          "",
-          sub.file1_metric,
-          sub.file2_metric,
-          sub.difference,
-        ]);
-        for (const child of sub.children) {
-          rows.push([
-            main.category,
-            sub.category,
-            child.category,
-            child.file1_metric,
-            child.file2_metric,
-            child.difference,
-          ]);
-        }
-      }
+  const handleDownloadBreakdown = async () => {
+    if (!selectedProject || selectedProject === 'OVERALL') return;
+    setIsDownloadingBreakdown(true);
+    setBreakdownError(null);
+    try {
+      const blob = await downloadXlsx(
+        fromPeriod,
+        toPeriod,
+        selectedProject as number,
+        metric,
+      );
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `project_${selectedProject}_cost_breakdown.xlsx`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error("Failed to download cost breakdown:", err);
+      setBreakdownError("Download failed. Please try again.");
+    } finally {
+      setIsDownloadingBreakdown(false);
     }
-
-    // Escape CSV fields that may contain commas
-    const csvContent = rows
-      .map((r) =>
-        r.map((cell) => {
-          const str = String(cell);
-          return str.includes(",") || str.includes('"')
-            ? `"${str.replace(/"/g, '""')}"`
-            : str;
-        }).join(",")
-      )
-      .join("\n");
-
-    const blob = new Blob([csvContent], { type: "text/csv" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `project_${selectedProject}_cost_breakdown.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
   };
 
   return (
@@ -239,12 +201,18 @@ export function ProjectSummary() {
       </Card>
 
       {/* --- Download Cost Breakdown Report Button --- */}
-      <button
-        onClick={handleDownloadBreakdown}
-        className="rounded border border-slate-600 bg-transparent px-4 py-2 text-sm font-medium text-white hover:bg-slate-800 transition-colors"
-      >
-        Download Cost Breakdown Report
-      </button>
+      <div>
+        <button
+          onClick={handleDownloadBreakdown}
+          disabled={isDownloadingBreakdown}
+          className="rounded border border-slate-600 bg-transparent px-4 py-2 text-sm font-medium text-white hover:bg-slate-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {isDownloadingBreakdown ? "Generating report..." : "Download Cost Breakdown Report"}
+        </button>
+        {breakdownError && (
+          <p className="mt-2 text-xs text-red-400">{breakdownError}</p>
+        )}
+      </div>
     </div>
   );
 }
