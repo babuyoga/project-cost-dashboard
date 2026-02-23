@@ -13,7 +13,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import Response
 import os
 import logging
-from app.routers import projects, analysis, download
+from app.routers import projects, analysis, download, chat
 
 # Configure logging
 logging.basicConfig(
@@ -68,6 +68,9 @@ app.include_router(analysis.router, prefix="/api/analysis", tags=["Analysis"])
 logger.info("  - /api/analysis (Analysis endpoints)")
 app.include_router(download.router, prefix="/api/download", tags=["Download"])
 logger.info("  - /api/download (Download endpoints)")
+app.include_router(chat.router, prefix="/api/chat", tags=["Chat"])
+logger.info("  - /api/chat (Chat endpoints)")
+
 
 
 # Log startup information

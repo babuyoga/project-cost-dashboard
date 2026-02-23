@@ -227,3 +227,23 @@ export async function downloadXlsx(
   console.log("[API] Excel report received successfully");
   return res.blob();
 }
+
+export async function sendChatMessage(
+  userInput: string,
+  systemPrompt: string,
+): Promise<string> {
+  console.log("[API] Sending chat message:", userInput.slice(0, 60));
+  const res = await fetch(`${API_BASE_url}/chat`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ user_input: userInput, system_prompt: systemPrompt }),
+  });
+  if (!res.ok) {
+    const errorMsg = await getErrorMessage(res);
+    console.warn("[API] Chat failed. Status:", res.status, errorMsg);
+    throw new Error(errorMsg);
+  }
+  const data = await res.json();
+  console.log(`[API] Chat answer received (${data.answer?.length || 0} chars)`);
+  return data.answer as string;
+}

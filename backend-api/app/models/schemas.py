@@ -97,3 +97,15 @@ class ProjectSummaryRequest(BaseModel):
     period_from: str = Field(..., pattern=r"^\d{6}$", description="Format: YYYYMM")
     period_to: str = Field(..., pattern=r"^\d{6}$", description="Format: YYYYMM")
     metric: str = Field(..., pattern="^(forecast_costs_at_completion|ytd_actual)$")
+
+
+class ChatRequest(BaseModel):
+    """
+    Request body for the AI chat endpoint.
+
+    Attributes:
+        user_input:    The user's question about the project data.
+        system_prompt: Financial context crafted by the frontend (cost summary text).
+    """
+    user_input: str
+    system_prompt: str

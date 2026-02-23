@@ -7,6 +7,7 @@ import { fetchProjectSummary, downloadXlsx } from "@/app/lib/api";
 import { Card } from "@/app/components/ui/card";
 import { TrendLineChart } from "../charts/TrendLineChart";
 import { ChevronDown } from "lucide-react";
+import { ChatPanel } from "../ChatPanel";
 
 /** Format a number in thousands to "X.XX million" display */
 function toMillions(value: number): string {
@@ -213,6 +214,17 @@ export function ProjectSummary() {
           <p className="mt-2 text-xs text-red-400">{breakdownError}</p>
         )}
       </div>
+
+      {/* --- Section: AI Chat --- */}
+      {selectedProject && selectedProject !== 'OVERALL' && (
+        <ChatPanel
+          projectNo={selectedProject as number}
+          fromPeriod={fromPeriod}
+          toPeriod={toPeriod}
+          metric={metric}
+          projectKey={projectKey}
+        />
+      )}
     </div>
   );
 }
