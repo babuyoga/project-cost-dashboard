@@ -15,12 +15,22 @@ RUN \
   else echo "Lockfile not found." && exit 1; \
   fi
 
+# Force rebuild better-sqlite3 from source for the container's architecture
+RUN npm rebuild better-sqlite3 --build-from-source
+
 
 # Rebuild the source code only when needed
 FROM base AS builder
 WORKDIR /app
+
+# Need build tools here too — next build loads better-sqlite3 during "Collecting page data"
+RUN apk add --no-cache libc6-compat python3 make g++
+
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
+
+# Rebuild native module again in this stage to guarantee correct arch
+RUN npm rebuild better-sqlite3 --build-from-source
 
 # Next.js collects completely anonymous telemetry data about general usage.
 # Learn more here: https://nextjs.org/telemetry
@@ -42,7 +52,7 @@ ENV NODE_ENV=production
 # Uncomment the following line in case you want to disable telemetry during runtime.
 # ENV NEXT_TELEMETRY_DISABLED=1
 
-# Install runtime dependency for better-sqlite3
+# Runtime dependency for better-sqlite3
 RUN apk add --no-cache libc6-compat
 
 RUN addgroup --system --gid 1001 nodejs
@@ -58,6 +68,9 @@ RUN chown nextjs:nodejs .next
 # https://nextjs.org/docs/advanced-features/output-file-tracing
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+
+# Copy the compiled better-sqlite3 native module for runtime
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/better-sqlite3 ./node_modules/better-sqlite3
 
 # Create data directory for SQLite and give ownership to nextjs user
 RUN mkdir -p /app/data && chown nextjs:nodejs /app/data
