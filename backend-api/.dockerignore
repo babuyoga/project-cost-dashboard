@@ -1,0 +1,11 @@
+venv/
+__pycache__/
+*.pyc
+*.pyo
+.git
+.env
+cost-dashboard.db
+cost-dashboard.db-shm
+cost-dashboard.db-wal
+.pytest_cache/
+htmlcov/
